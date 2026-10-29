@@ -1,0 +1,48 @@
+name: chargeops
+
+services:
+  mysql:
+    image: mysql:8.4
+    profiles: [full]
+    environment:
+      MYSQL_DATABASE: chargeops
+      MYSQL_USER: chargeops
+      MYSQL_PASSWORD: change-me
+      MYSQL_ROOT_PASSWORD: change-me-root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  chroma:
+    image: chromadb/chroma:latest
+    profiles: [full]
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+
+  backend:
+    build:
+      context: ./backend
+    profiles: [full]
+    env_file:
+      - .env
+    depends_on:
+      - mysql
+      - chroma
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    profiles: [full]
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  mysql-data:
+  chroma-data:

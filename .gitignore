@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node / Vue
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Databases and vector stores
+*.sqlite
+*.sqlite3
+*.db
+mysql-data/
+chroma-data/
+chroma/
+
+# Runtime files
+logs/*
+uploads/*
+data/raw/*
+data/processed/*
+data/manifests/*
+data/rag/*
+!data/raw/
+!data/raw/public/
+!data/raw/user_upload/
+!data/raw/synthetic/
+!data/processed/
+!data/manifests/
+!data/templates/
+!data/raw/public/.gitkeep
+!data/raw/user_upload/.gitkeep
+!data/raw/synthetic/.gitkeep
+!data/processed/.gitkeep
+!data/manifests/.gitkeep
+!data/templates/.gitkeep
+!rag_docs/charging_standards/.gitkeep
+!rag_docs/operation_manuals/.gitkeep
+!rag_docs/subsidy_policies/.gitkeep
+!rag_docs/site_selection/.gitkeep
+!rag_docs/business_rules/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+.codex/
+.superpowers/
