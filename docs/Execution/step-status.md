@@ -30,3 +30,15 @@
 - Docker Desktop 未安装，容器依赖启动留待 Step 4 或 Step 38。
 - 已创建 Step 3 执行记录：`step03-local-environment.md`。
 - Step 4 尚未执行。
+
+## Step 4：准备 MySQL、Chroma 和模型服务
+
+**状态：完成，Windows 服务启动方式待后续完善。**
+
+- `chargeops` MySQL 数据库和本地业务用户已创建，连接验证通过。
+- 本机 Chroma `127.0.0.1:8001` 心跳验证通过。
+- Chat、Embedding 和 Rerank 模型端点验证通过。
+- 已创建依赖检查脚本：`scripts/check_dependencies.ps1`。
+- 已创建 Step 4 执行记录：`step04-services.md`。
+- MySQL Windows 服务当前不能由本次会话启动，后续在 Step 38 处理持久化启动方式。
+- Step 5 尚未执行。

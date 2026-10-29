@@ -33,6 +33,7 @@ secrets/
 mysql-data/
 chroma-data/
 chroma/
+data/chroma/
 
 # Runtime files
 logs/*
