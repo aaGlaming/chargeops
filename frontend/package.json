@@ -1,0 +1,28 @@
+{
+  "name": "chargeops-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ChargeOps 充电站选址与扩容决策平台前端",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "echarts": "5.6.0",
+    "element-plus": "2.14.7",
+    "vue": "3.5.44",
+    "vue-router": "5.4.0",
+    "axios": "1.13.2",
+    "pinia": "3.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@vitejs/plugin-vue": "6.0.10",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vue-tsc": "3.3.13"
+  }
+}

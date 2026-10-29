@@ -19,3 +19,14 @@
 - 已创建 Step 2 执行记录：`step02-repository.md`。
 - 初始提交 `f6f43b8` 已推送到远程 `main` 分支。
 - Step 3 尚未执行。
+
+## Step 3：配置 Windows 本地开发环境
+
+**状态：完成，Docker Desktop 待补充。**
+
+- 已创建项目专属 `.venv` 并安装后端依赖，`pip check` 通过。
+- 已安装前端依赖并生成 `frontend/package-lock.json`。
+- 已生成本地 `.env`，模型密钥为空且文件已被 Git 忽略。
+- Docker Desktop 未安装，容器依赖启动留待 Step 4 或 Step 38。
+- 已创建 Step 3 执行记录：`step03-local-environment.md`。
+- Step 4 尚未执行。
