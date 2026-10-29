@@ -17,4 +17,5 @@
 - 已添加远程仓库 `https://github.com/aaGlaming/chargeops.git`。
 - 已创建项目骨架、`.gitignore`、`.env.example`、`compose.yaml` 和 `VERSION`。
 - 已创建 Step 2 执行记录：`step02-repository.md`。
-- 初始提交并推送到远程仓库后，Step 3 才开始执行。
+- 初始提交 `f6f43b8` 已推送到远程 `main` 分支。
+- Step 3 尚未执行。
