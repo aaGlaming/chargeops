@@ -13,6 +13,7 @@ import {
   Setting,
   Tickets,
   TrendCharts,
+  UploadFilled,
 } from '@element-plus/icons-vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import AppTopbar from '../components/layout/AppTopbar.vue'
@@ -36,6 +37,7 @@ const navigationGroups = computed<NavigationGroup[]>(() => {
     {
       label: '业务数据',
       items: [
+        { path: '/imports', label: '数据导入', icon: UploadFilled, roles: ['OPS_LEAD', 'POLICY_ADMIN', 'SYSTEM_ADMIN'] },
         { path: '/stations', label: '站点', icon: Location, roles: ['OPS_ANALYST', 'SITE_PLANNER', 'OPS_LEAD', 'SYSTEM_ADMIN', 'AUDITOR'] },
         { path: '/candidates', label: '候选站点', icon: Aim, roles: ['OPS_ANALYST', 'SITE_PLANNER', 'SYSTEM_ADMIN', 'AUDITOR'] },
       ],

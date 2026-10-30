@@ -1,0 +1,2 @@
+external_station_id,external_station_key,station_name,operator_name,region_code,street_address,city,state,zip_code,country_code,latitude,longitude,station_status,access_type,facility_type,total_connector_count,total_power_kw,date_last_confirmed,effective_date,data_version
+

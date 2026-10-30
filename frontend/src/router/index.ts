@@ -11,6 +11,7 @@ import {
   Setting,
   Tickets,
   TrendCharts,
+  UploadFilled,
 } from '@element-plus/icons-vue'
 import { useAuth } from '../stores/auth'
 
@@ -43,6 +44,12 @@ const router = createRouter({
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
       meta: { title: '首页', subtitle: '运营驾驶舱', icon: House, requiresAuth: true, permission: 'menu.dashboard' },
+    },
+    {
+      path: '/imports',
+      name: 'imports',
+      component: () => import('../views/ImportView.vue'),
+      meta: { title: '数据导入', subtitle: '业务数据上传、校验与批次管理', icon: UploadFilled, requiresAuth: true, permission: 'menu.imports' },
     },
     {
       path: '/stations',
