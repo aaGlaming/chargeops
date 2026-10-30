@@ -104,7 +104,7 @@ const router = createRouter({
     {
       path: '/rag',
       name: 'rag',
-      component: () => import('../views/WorkspaceView.vue'),
+      component: () => import('../views/RagWorkspaceView.vue'),
       meta: { title: 'RAG 知识库', subtitle: '政策、规范与原文证据', icon: Notebook, requiresAuth: true, permission: 'rag.read' },
     },
     {
