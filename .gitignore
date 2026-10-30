@@ -38,6 +38,8 @@ data/chroma/
 # Runtime files
 logs/*
 uploads/*
+backups/*
+restore/*
 data/raw/*
 data/processed/*
 data/manifests/*

@@ -31,6 +31,13 @@ function Wait-TcpPort([string]$HostName, [int]$Port, [int]$TimeoutSeconds = 60) 
     throw "服务未在 $TimeoutSeconds 秒内监听 $HostName`:$Port"
 }
 
+function Test-ChargeOpsApi([int]$Port) {
+    try {
+        $schema = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/openapi.json" -TimeoutSec 2
+        return $schema.info.title -eq "ChargeOps API"
+    } catch { return $false }
+}
+
 function Save-ProcessId([string]$Name, [int]$ProcessId) {
     Set-Content -LiteralPath (Join-Path $StateDir "$Name.pid") -Value $ProcessId -Encoding ascii
 }
@@ -52,11 +59,15 @@ if ($StartChroma -and -not (Test-TcpPort "127.0.0.1" 8001)) {
 }
 Wait-TcpPort "127.0.0.1" 8001
 
-if (-not (Test-TcpPort "127.0.0.1" $ApiPort)) {
+if (-not (Test-ChargeOpsApi $ApiPort)) {
+    if (Test-TcpPort "127.0.0.1" $ApiPort) {
+        throw "端口 $ApiPort 已被其他应用占用；请指定 -ApiPort 使用空闲端口"
+    }
     $backendOut = Join-Path $StateDir "backend.out.log"
     $backendErr = Join-Path $StateDir "backend.err.log"
-    $env:PYTHONPATH = "backend"
-    $backend = Start-Process -FilePath "python" -ArgumentList "-m","uvicorn","app.main:app","--host","127.0.0.1","--port",$ApiPort -WorkingDirectory (Join-Path $Root "backend") -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru
+    $env:PYTHONPATH = (Join-Path $Root "backend")
+    $backendCommand = "python -m uvicorn app.main:app --host 127.0.0.1 --port $ApiPort"
+    $backend = Start-Process -FilePath "cmd.exe" -ArgumentList "/d","/s","/c",$backendCommand -WorkingDirectory (Join-Path $Root "backend") -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru -WindowStyle Hidden
     Save-ProcessId "backend" $backend.Id
 }
 Wait-TcpPort "127.0.0.1" $ApiPort

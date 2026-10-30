@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "backup_dir": "D:\\LEARN\\AI\\programs\\AgentTask\\Projects\\chargeops\\backups\\step39\\20261030T123041Z",
+  "restore": {
+    "files": 58,
+    "path": "D:\\LEARN\\AI\\programs\\AgentTask\\Projects\\chargeops\\restore\\step39\\20261030T123041Z"
+  },
+  "checksum": {
+    "files": 59,
+    "failures": []
+  },
+  "mysql": {
+    "status": "VERIFIED",
+    "shadow_table_count": 31,
+    "shadow_row_counts": {
+      "step39_restore_station_operation_metric": 504,
+      "step39_restore_rag_document_section": 7,
+      "step39_restore_rag_embedding_batch": 9,
+      "step39_restore_station_fault_event": 31,
+      "step39_restore_charging_connector": 20677,
+      "step39_restore_rag_embedding_item": 18,
+      "step39_restore_charging_station": 20383,
+      "step39_restore_import_row_error": 4,
+      "step39_restore_policy_condition": 4,
+      "step39_restore_schema_migration": 9,
+      "step39_restore_agent_run_event": 36,
+      "step39_restore_rag_chunk_batch": 8,
+      "step39_restore_role_permission": 207,
+      "step39_restore_user_data_scope": 0,
+      "step39_restore_candidate_site": 13,
+      "step39_restore_expansion_plan": 13,
+      "step39_restore_rag_search_log": 64,
+      "step39_restore_agent_report": 21,
+      "step39_restore_import_batch": 16,
+      "step39_restore_rag_document": 3,
+      "step39_restore_permissions": 58,
+      "step39_restore_site_score": 5,
+      "step39_restore_agent_run": 33,
+      "step39_restore_audit_log": 546,
+      "step39_restore_rag_chunk": 19,
+      "step39_restore_tool_call": 202,
+      "step39_restore_user_role": 11,
+      "step39_restore_operator": 66,
+      "step39_restore_region": 1,
+      "step39_restore_roles": 6,
+      "step39_restore_users": 11
+    }
+  },
+  "chroma": {
+    "status": "FILES_VERIFIED",
+    "files": 5,
+    "bytes": 4535012,
+    "server_status": "VERIFIED",
+    "collection_count": 1
+  },
+  "api_verification": {
+    "status": "VERIFIED",
+    "rag_status": "HIT",
+    "rag_hit_count": 3,
+    "agent_type": "site_selection",
+    "agent_run_id": "dc186fbc-2295-4e56-bd6d-509b61a567a9",
+    "agent_status": "COMPLETED"
+  }
+}

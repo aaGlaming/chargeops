@@ -444,3 +444,13 @@
 - 已验证 Windows 上 MySQL、Chroma、FastAPI 和 Vue 的顺序启动，以及数据库迁移、权限种子、合成数据导入和 RAG 索引。
 - 部署验收脚本 41 项静态和运行检查全部通过；Docker CLI 未安装，容器 up/build/restart/volume 项目记录为 skipped。
 - 详细记录见 `step38-deployment-acceptance.md` 和 `evals/step38/reports/latest.json`。
+
+## Step 39：完成备份和恢复验证
+
+**状态：完成。**
+
+- 已实现 MySQL、Chroma、RAG 原文、Chunk/Embedding 元数据、Manifest、模板、清洗结果和评测结果备份，并生成 SHA-256 清单。
+- 已在独立目录恢复文件，在 MySQL 内执行带前缀影子表恢复校验，并自动清理影子表。
+- 已从恢复目录启动临时 Chroma 实例，验证 heartbeat、collection 和索引可读取。
+- 已通过恢复后的 API 重新执行 RAG 检索和候选选址 Agent，结果分别为命中和 `COMPLETED`。
+- 详细记录见 `step39-backup-restore.md` 和 `evals/step39/reports/latest.json`。
