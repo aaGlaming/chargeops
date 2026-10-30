@@ -1,0 +1,36 @@
+{
+  "suite": "chargeops-rag-deterministic-gold-v1",
+  "data_version": "eval-step34-2026-10-30",
+  "documents": [
+    {
+      "document_key": "coverage-guideline-ca-test-v1",
+      "doc_type": "business_rule",
+      "region_code": "CA-TEST",
+      "version": "2026.1",
+      "content": "# Coverage guideline\n\nThe target coverage radius is 5 km. Areas below the coverage threshold require a coverage gap review.\n",
+      "expected_fragments": ["target coverage radius is 5 km", "coverage gap review"]
+    },
+    {
+      "document_key": "municipal-subsidy-ca-test-v1",
+      "doc_type": "policy",
+      "region_code": "CA-TEST",
+      "version": "2026.1",
+      "content": "# Municipal subsidy\n\nMunicipal applicants must submit a site plan before 2026-12-31.\n",
+      "expected_fragments": ["Municipal applicants", "site plan", "2026-12-31"]
+    },
+    {
+      "document_key": "expansion-safety-ca-test-v1",
+      "doc_type": "safety_standard",
+      "region_code": "CA-TEST",
+      "version": "2026.1",
+      "content": "# Expansion safety\n\nAny expansion plan requires a capacity review and safety review before confirmation.\n",
+      "expected_fragments": ["capacity review", "safety review"]
+    }
+  ],
+  "queries": [
+    {"query_id": "rag_query_coverage_001", "query": "5 km coverage radius gap", "agent_scenario": "coverage_gap", "filters": {"doc_type": "business_rule", "region_code": "CA-TEST", "version": "2026.1"}, "expected_document_keys": ["coverage-guideline-ca-test-v1"], "expected_fragment": "target coverage radius is 5 km"},
+    {"query_id": "rag_query_policy_001", "query": "municipal subsidy site plan deadline", "agent_scenario": "policy_matching", "filters": {"doc_type": "policy", "region_code": "CA-TEST", "version": "2026.1"}, "expected_document_keys": ["municipal-subsidy-ca-test-v1"], "expected_fragment": "Municipal applicants must submit a site plan"},
+    {"query_id": "rag_query_expansion_001", "query": "expansion capacity safety review", "agent_scenario": "expansion", "filters": {"doc_type": "safety_standard", "region_code": "CA-TEST", "version": "2026.1"}, "expected_document_keys": ["expansion-safety-ca-test-v1"], "expected_fragment": "capacity review and safety review"},
+    {"query_id": "rag_query_no_hit_001", "query": "unpublished technology grant", "agent_scenario": "policy_matching", "filters": {"doc_type": "policy", "region_code": "CA-TEST", "version": "2026.1"}, "expected_document_keys": [], "expected_status": "EVIDENCE_INSUFFICIENT", "expected_fragment": null}
+  ]
+}

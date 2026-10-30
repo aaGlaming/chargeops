@@ -1,0 +1,160 @@
+{
+  "suite": "chargeops-agent-deterministic-gold-v1",
+  "data_version": "eval-step34-2026-10-30",
+  "as_of": "2026-10-30",
+  "cases": [
+    {
+      "case_id": "coverage_gap_gold_001",
+      "agent_type": "coverage_gap",
+      "complexity": "medium",
+      "input": {
+        "data_version": "eval-step34-2026-10-30",
+        "region_code": "CA-TEST",
+        "charger_type": "FAST",
+        "coverage_radius_km": 5,
+        "threshold": 0.8,
+        "fast_ratio_threshold": 0.3,
+        "time_gap_occupancy_threshold": 0.85,
+        "stale_after_days": 365,
+        "analysis_date": "2026-10-30"
+      },
+      "context": {
+        "region": {
+          "region_code": "CA-TEST",
+          "data_version": "eval-step34-2026-10-30",
+          "boundary_geojson": {"type": "Polygon", "coordinates": [[[0, 0], [0.1, 0], [0.1, 0.1], [0, 0.1], [0, 0]]]}
+        },
+        "stations": [
+          {"id": 1, "longitude": 0.05, "latitude": 0.05, "charging_types": ["DC_FAST"], "total_connector_count": 4, "date_last_confirmed": "2026-10-01"},
+          {"id": 2, "longitude": 0.08, "latitude": 0.08, "charging_types": ["AC_LEVEL_2"], "total_connector_count": 2, "date_last_confirmed": "2026-10-01"}
+        ],
+        "connectors": [
+          {"station_id": 1, "connector_type": "DC_FAST", "quantity": 4, "power_kw": 150},
+          {"station_id": 2, "connector_type": "AC_LEVEL_2", "quantity": 2, "power_kw": 11}
+        ],
+        "metrics": [
+          {"metric_hour": 8, "occupancy_rate": 0.9},
+          {"metric_hour": 12, "occupancy_rate": 0.5}
+        ]
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "required_keys": ["coverage_score", "gap_types", "metrics", "nearest_station_distance_km", "station_density_per_sq_km", "freshness"],
+        "fields": {"metrics.station_count": 2, "metrics.connector_count": 6, "metrics.fast_connector_count": 4, "metrics.temporal.gap_hours": [8], "gap_types": ["TIME_WINDOW"]},
+        "reject_conditions": [{"path": "status", "not_equals": "MISSING_BUSINESS_DATA"}, {"path": "data_insufficiency", "not_contains": "REGION_NOT_FOUND"}]
+      }
+    },
+    {
+      "case_id": "coverage_gap_reject_001",
+      "agent_type": "coverage_gap",
+      "complexity": "simple",
+      "input": {"data_version": "eval-step34-2026-10-30", "region_code": "CA-MISSING", "analysis_date": "2026-10-30"},
+      "context": {"region": null, "stations": [], "connectors": [], "metrics": []},
+      "expected": {
+        "status": "MISSING_BUSINESS_DATA",
+        "required_keys": ["stop_reason", "data_insufficiency", "gap_types"],
+        "fields": {"stop_reason": "MISSING_BUSINESS_DATA", "data_insufficiency": ["REGION_NOT_FOUND"]},
+        "reject_conditions": [{"path": "coverage_score", "equals": null}, {"path": "gap_types", "contains": "DATA_INSUFFICIENT"}]
+      }
+    },
+    {
+      "case_id": "competition_gold_001",
+      "agent_type": "competition",
+      "complexity": "medium",
+      "input": {"data_version": "eval-step34-2026-10-30", "latitude": 0, "longitude": 0, "radius_km": 5, "distance_decay_km": 2, "service_gap_connector_threshold": 4, "service_gap_power_kw_threshold": 150, "analysis_date": "2026-10-30"},
+      "context": {
+        "stations": [
+          {"id": 10, "station_name": "Alpha", "latitude": 0, "longitude": 0.01, "operator_name": "Operator A", "operator_code": "A", "charging_types": ["DC_FAST"], "date_last_confirmed": "2026-10-01"},
+          {"id": 11, "station_name": "Beta", "latitude": 0.02, "longitude": 0, "operator_name": "Operator A", "operator_code": "A", "charging_types": ["AC_LEVEL_2"], "date_last_confirmed": "2026-10-01"},
+          {"id": 12, "station_name": "Gamma", "latitude": 0.04, "longitude": 0, "operator_name": "Operator B", "operator_code": "B", "charging_types": ["DC_FAST"], "date_last_confirmed": "2026-10-01"}
+        ],
+        "connectors": [
+          {"station_id": 10, "connector_type": "DC_FAST", "quantity": 3, "power_kw": 150},
+          {"station_id": 11, "connector_type": "AC_LEVEL_2", "quantity": 2, "power_kw": 11},
+          {"station_id": 12, "connector_type": "DC_FAST", "quantity": 1, "power_kw": 60}
+        ]
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "required_keys": ["competition_index", "nearby_stations", "operator_concentration", "service_gaps", "risk_flags", "metrics"],
+        "fields": {"nearby_station_count": 3, "operator_distribution": {"Operator A": 2, "Operator B": 1}, "connector_power_groups.total_connectors": 6, "metrics.fast_connector_count": 4},
+        "reject_conditions": [{"path": "competition_index", "not_equals": null}, {"path": "status", "not_equals": "MISSING_BUSINESS_DATA"}]
+      }
+    },
+    {
+      "case_id": "competition_reject_001",
+      "agent_type": "competition",
+      "complexity": "simple",
+      "input": {"data_version": "eval-step34-2026-10-30", "latitude": 0, "longitude": 0, "radius_km": 5, "analysis_date": "2026-10-30"},
+      "context": {"stations": [], "connectors": []},
+      "expected": {"status": "MISSING_BUSINESS_DATA", "required_keys": ["stop_reason", "data_insufficiency", "service_gaps"], "fields": {"stop_reason": "MISSING_BUSINESS_DATA", "data_insufficiency": ["NEARBY_STATIONS_EMPTY"]}, "reject_conditions": [{"path": "competition_index", "equals": null}]}
+    },
+    {
+      "case_id": "site_selection_gold_001",
+      "agent_type": "site_selection",
+      "complexity": "medium",
+      "input": {"data_version": "eval-step34-2026-10-30", "candidate_site_ids": [101, 102], "nearby_radius_km": 5, "stale_after_days": 90, "min_data_confidence": 0.6},
+      "context": {
+        "regions": [{"region_code": "CA-TEST", "data_version": "eval-step34-2026-10-30"}],
+        "stations": [{"id": 20, "station_name": "Existing", "latitude": 0, "longitude": 0, "date_last_confirmed": "2026-10-01"}],
+        "candidates": [
+          {"id": 101, "site_name": "Candidate A", "region": {"region_code": "CA-TEST"}, "latitude": 0, "longitude": 0, "area_sqm": 800, "parking_spaces": 40, "electric_capacity_kw": 400, "budget_usd": 400000, "traffic_index": 90, "population_density": 800, "policy_score": 85, "planned_open_date": "2027-01-01", "data_as_of": "2026-10-01", "completeness": {"score": 1}},
+          {"id": 102, "site_name": "Candidate B", "region": {"region_code": "CA-TEST"}, "latitude": 0.02, "longitude": 0, "area_sqm": 600, "parking_spaces": 20, "electric_capacity_kw": 300, "budget_usd": 300000, "traffic_index": 60, "population_density": 400, "policy_score": 60, "planned_open_date": "2027-02-01", "data_as_of": "2026-10-01", "completeness": {"score": 1}}
+        ]
+      },
+      "expected": {"status": "COMPLETED", "required_keys": ["ranked_candidates", "selected_candidate_id", "scoring_breakdown", "weights"], "fields": {"selected_candidate_id": 101, "scoring_rule_version": "site-selection-score-v1", "ranked_candidates.0.recommendation_grade": "B"}, "reject_conditions": [{"path": "ranked_candidates", "not_equals": []}]}
+    },
+    {
+      "case_id": "site_selection_reject_001",
+      "agent_type": "site_selection",
+      "complexity": "simple",
+      "input": {"data_version": "eval-step34-2026-10-30", "candidate_site_ids": [201], "nearby_radius_km": 5},
+      "context": {"regions": [{"region_code": "CA-TEST"}], "stations": [], "candidates": [{"id": 201, "site_name": "Incomplete", "region": {"region_code": "CA-TEST"}, "latitude": 0, "longitude": 0, "traffic_index": 20, "population_density": 10}]},
+      "expected": {"status": "COMPLETED", "required_keys": ["ranked_candidates", "missing_data", "scoring_rule_version"], "fields": {"selected_candidate_id": 201, "ranked_candidates.0.recommendation_grade": "C"}, "reject_conditions": [{"path": "ranked_candidates.0.missing_data", "contains": "electric_capacity_kw"}, {"path": "ranked_candidates.0.recommendation_grade", "not_equals": "A"}]}
+    },
+    {
+      "case_id": "expansion_gold_001",
+      "agent_type": "expansion",
+      "complexity": "medium",
+      "input": {"data_version": "eval-step34-2026-10-30", "station_ids": [301], "analysis_date": "2026-10-30", "occupancy_target": 0.75, "high_occupancy_threshold": 0.9, "fast_connector_power_kw": 60, "fast_connector_cost_usd": 25000, "slow_connector_cost_usd": 5000},
+      "context": {
+        "stations": [{"id": 301, "station_name": "Busy Hub", "available_capacity_kw": 100, "data_as_of": "2026-10-01"}],
+        "connectors": [{"station_id": 301, "connector_type": "DC_FAST", "quantity": 4, "power_kw": 60}, {"station_id": 301, "connector_type": "AC_LEVEL_2", "quantity": 2, "power_kw": 11}],
+        "metrics": [{"station_id": 301, "occupancy_rate": 0.95, "metric_date": "2026-10-29"}, {"station_id": 301, "occupancy_rate": 0.85, "metric_date": "2026-10-30"}],
+        "faults": [{"station_id": 301, "severity": "HIGH"}, {"station_id": 301, "severity": "LOW"}]
+      },
+      "expected": {"status": "WAITING_CONFIRMATION", "required_keys": ["plans", "confirmation_status", "metrics", "scoring_rule_version"], "fields": {"confirmation_status": "PENDING", "plans.0.proposed_fast_connectors": 3, "plans.0.estimated_budget_usd": 75000, "plans.0.priority": "HIGH", "plans.0.status": "READY_FOR_CONFIRMATION"}, "reject_conditions": [{"path": "plans.0.proposed_fast_connectors", "not_equals": 0}]}
+    },
+    {
+      "case_id": "expansion_reject_001",
+      "agent_type": "expansion",
+      "complexity": "simple",
+      "input": {"data_version": "eval-step34-2026-10-30", "station_ids": [302], "analysis_date": "2026-10-30"},
+      "context": {"stations": [{"id": 302, "station_name": "Incomplete Hub"}], "connectors": [], "metrics": [], "faults": []},
+      "expected": {"status": "WAITING_CONFIRMATION", "required_keys": ["plans", "missing_data", "risk_summary"], "fields": {"plans.0.status": "WAITING_DATA", "plans.0.missing_data": ["CONNECTOR_DATA", "FAULT_HISTORY", "OPERATION_METRICS", "POWER_CAPACITY"]}, "reject_conditions": [{"path": "plans.0.status", "not_equals": "READY_FOR_CONFIRMATION"}]}
+    },
+    {
+      "case_id": "policy_matching_gold_001",
+      "agent_type": "policy_matching",
+      "complexity": "medium",
+      "input": {"data_version": "eval-step34-2026-10-30", "region_code": "CA-TEST", "subject_type": "MUNICIPAL", "candidate_site_ids": [101], "project_budget_usd": 75000, "planned_scale_kw": 400, "available_materials": ["site_plan"], "planned_date": "2026-10-01"},
+      "context": {
+        "candidates": [{"id": 101, "external_candidate_id": "CAND-101", "site_name": "Candidate A", "region": {"region_code": "CA-TEST"}, "site_type": "RETAIL", "electric_capacity_kw": 400, "budget_usd": 75000, "data_as_of": "2026-10-01"}],
+        "policies": [
+          {"id": 1, "policy_code": "P-MUNICIPAL", "policy_version": "2026.1", "title": "Municipal program", "policy_type": "SUBSIDY", "condition_key": "applicant_type", "condition_value": "MUNICIPAL", "condition_operator": "EQ", "required_materials": ["site_plan"], "effective_from": "2026-01-01", "effective_to": "2026-12-31", "application_deadline": "2026-12-31", "data_version": "eval-step34-2026-10-30"},
+          {"id": 2, "policy_code": "P-MATERIAL", "policy_version": "2026.1", "title": "Utility review", "policy_type": "PERMIT", "condition_key": "applicant_type", "condition_value": "MUNICIPAL", "condition_operator": "EQ", "required_materials": ["site_plan", "utility_letter"], "effective_from": "2026-01-01", "effective_to": "2026-12-31", "data_version": "eval-step34-2026-10-30"},
+          {"id": 3, "policy_code": "P-RETAIL", "policy_version": "2026.1", "title": "Retail only", "policy_type": "SUBSIDY", "condition_key": "site_type", "condition_value": "DEPOT", "condition_operator": "EQ", "required_materials": [], "effective_from": "2026-01-01", "effective_to": "2026-12-31", "data_version": "eval-step34-2026-10-30"}
+        ]
+      },
+      "expected": {"status": "COMPLETED", "required_keys": ["policy_matches", "match_summary", "policy_versions", "missing_materials"], "fields": {"match_summary": {"total": 3, "pass": 1, "partial": 1, "fail": 1, "unknown": 0}, "missing_materials": ["utility_letter"], "policy_versions": ["2026.1"], "scoring_rule_version": "policy-matching-v1"}, "reject_conditions": [{"path": "match_summary.total", "not_equals": 0}]}
+    },
+    {
+      "case_id": "policy_matching_reject_001",
+      "agent_type": "policy_matching",
+      "complexity": "simple",
+      "input": {"data_version": "eval-step34-2026-10-30", "region_code": "CA-TEST", "subject_type": "MUNICIPAL", "planned_date": "2026-10-01"},
+      "context": {"policies": [], "candidates": []},
+      "expected": {"status": "MISSING_BUSINESS_DATA", "required_keys": ["policy_matches", "missing_conditions", "match_summary"], "fields": {"stop_reason": "MISSING_BUSINESS_DATA", "missing_conditions": ["POLICIES_EMPTY"], "match_summary.total": 0}, "reject_conditions": [{"path": "policy_matches", "equals": []}]}
+    }
+  ]
+}

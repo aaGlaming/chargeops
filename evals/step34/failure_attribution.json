@@ -1,0 +1,14 @@
+{
+  "suite": "chargeops-step34-failure-attribution-v1",
+  "entries": [
+    {"case_id": "coverage_gap_reject_001", "failure_class": "missing_business_data", "root_cause": "region boundary is absent", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "supply region boundary_geojson"},
+    {"case_id": "competition_reject_001", "failure_class": "missing_business_data", "root_cause": "no nearby station rows", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "load station snapshot for target radius"},
+    {"case_id": "site_selection_reject_001", "failure_class": "missing_critical_fields", "root_cause": "candidate lacks construction and freshness fields", "status": "expected_rejection", "owner": "data-quality", "fix_reference": "complete candidate site template"},
+    {"case_id": "expansion_reject_001", "failure_class": "missing_operational_data", "root_cause": "metrics, faults, connectors and power capacity are absent", "status": "expected_rejection", "owner": "operations-data", "fix_reference": "import station metrics, faults and connector inventory"},
+    {"case_id": "policy_matching_reject_001", "failure_class": "missing_policy_data", "root_cause": "no policy condition rows are available", "status": "expected_rejection", "owner": "policy-admin", "fix_reference": "publish a versioned policy condition matrix"},
+    {"case_id": "import_duplicate_001", "failure_class": "duplicate_external_id", "root_cause": "external station identifier already exists in the batch", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "choose a stable unused external identifier"},
+    {"case_id": "import_coordinate_error_001", "failure_class": "invalid_coordinates", "root_cause": "latitude is outside -90 to 90", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "correct latitude before import"},
+    {"case_id": "import_foreign_key_error_001", "failure_class": "foreign_key_missing", "root_cause": "connector references an unknown station", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "import station before connector"},
+    {"case_id": "import_missing_required_001", "failure_class": "required_field_missing", "root_cause": "latitude is missing", "status": "expected_rejection", "owner": "data-pipeline", "fix_reference": "fill every required template field"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "suite_version": "step34-v1",
+  "data_version": "eval-step34-2026-10-30",
+  "snapshot_date": "2026-10-30",
+  "prompt_versions": {
+    "coverage_gap": "coverage-gap-v1",
+    "competition": "competition-v1",
+    "site_selection": "site-selection-v1",
+    "expansion": "expansion-v1",
+    "policy_matching": "policy-matching-v1"
+  },
+  "model": {"provider": "offline-deterministic", "chat_model": "fixture-no-model", "temperature": 0, "max_tokens": 0},
+  "embedding": {"provider": "offline-deterministic", "model": "fixture-no-embedding", "dimensions": 0, "index_version": "fixture-index-v1"},
+  "rule_versions": {
+    "coverage_gap": "coverage-gap-v1",
+    "competition": "competition-v1",
+    "site_selection": "site-selection-score-v1",
+    "expansion": "expansion-plan-v1",
+    "policy_matching": "policy-matching-v1"
+  },
+  "source_manifests": ["data/manifests/afdc_electric_stations_ca_2026-10-29.json", "data/manifests/synthetic_demo_2026-10-29.json"]
+}

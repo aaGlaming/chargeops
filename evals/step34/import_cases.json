@@ -1,0 +1,11 @@
+{
+  "suite": "chargeops-import-validation-v1",
+  "data_version": "eval-step34-2026-10-30",
+  "cases": [
+    {"case_id": "import_normal_001", "dataset_type": "stations", "row": {"external_station_id": "ST-000", "station_name": "Test Station", "latitude": 37.7749, "longitude": -122.4194, "station_status": "E", "access_type": "PUBLIC", "data_version": "eval-step34-2026-10-30"}, "expected": {"outcome": "VALID", "error_codes": []}},
+    {"case_id": "import_duplicate_001", "dataset_type": "stations", "row": {"external_station_id": "ST-001", "station_name": "Duplicate Station", "latitude": 37.7749, "longitude": -122.4194, "station_status": "E", "access_type": "PUBLIC", "data_version": "eval-step34-2026-10-30"}, "expected": {"outcome": "REJECTED", "error_codes": ["DUPLICATE_EXTERNAL_ID"]}},
+    {"case_id": "import_coordinate_error_001", "dataset_type": "stations", "row": {"external_station_id": "ST-BAD-COORD", "station_name": "Bad Coordinate", "latitude": 95, "longitude": -122.4194, "station_status": "E", "access_type": "PUBLIC", "data_version": "eval-step34-2026-10-30"}, "expected": {"outcome": "REJECTED", "error_codes": ["INVALID_COORDINATES"]}},
+    {"case_id": "import_foreign_key_error_001", "dataset_type": "connectors", "row": {"station_external_id": "ST-NOT-FOUND", "connector_type": "DC_FAST", "quantity": 2, "power_kw": 150, "data_version": "eval-step34-2026-10-30"}, "expected": {"outcome": "REJECTED", "error_codes": ["STATION_NOT_FOUND"]}},
+    {"case_id": "import_missing_required_001", "dataset_type": "stations", "row": {"external_station_id": "ST-MISSING", "station_name": "Missing Latitude", "longitude": -122.4194, "station_status": "E", "access_type": "PUBLIC", "data_version": "eval-step34-2026-10-30"}, "expected": {"outcome": "REJECTED", "error_codes": ["REQUIRED_FIELD_MISSING"]}}
+  ]
+}

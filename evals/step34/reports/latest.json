@@ -1,0 +1,106 @@
+{
+  "suite": "chargeops-step34-deterministic-baseline",
+  "suite_version": "step34-v1",
+  "generated_at": "2026-10-30T10:54:15.150973+00:00",
+  "versions": {
+    "suite_version": "step34-v1",
+    "data_version": "eval-step34-2026-10-30",
+    "snapshot_date": "2026-10-30",
+    "prompt_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-v1",
+      "expansion": "expansion-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "model": {
+      "provider": "offline-deterministic",
+      "chat_model": "fixture-no-model",
+      "temperature": 0,
+      "max_tokens": 0
+    },
+    "embedding": {
+      "provider": "offline-deterministic",
+      "model": "fixture-no-embedding",
+      "dimensions": 0,
+      "index_version": "fixture-index-v1"
+    },
+    "rule_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-score-v1",
+      "expansion": "expansion-plan-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "source_manifests": [
+      "data/manifests/afdc_electric_stations_ca_2026-10-29.json",
+      "data/manifests/synthetic_demo_2026-10-29.json"
+    ]
+  },
+  "fixture_sha256": {
+    "agent_gold.json": "06dac5da9106adbea3d78ea41f725cdbe34876c21790d0d34435133d2f43e0de",
+    "rag_gold.json": "3222c1bd21a63d8395c56cd3130ddbd658e3afb1a2dc9391e2b96cc99367aae5",
+    "import_cases.json": "f00a3067e2f92616ee0dd1651951f2c8950c31fd110180082bb4fa626b38da0e",
+    "versions.json": "492e0a36d857b9dd429bcddff0916fb274e544462d01a5a063f7a84fa7c8d2a9",
+    "failure_attribution.json": "06f58b2ea2cf7750638568ea2f26a5b29aa1b1852d1af7d7551beaaa2250cb9b"
+  },
+  "structural_errors": [],
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "pass_rate": 1.0,
+    "by_agent": {
+      "coverage_gap": 2,
+      "competition": 2,
+      "site_selection": 2,
+      "expansion": 2,
+      "policy_matching": 2,
+      "imports": 5
+    },
+    "passed_by_agent": {
+      "coverage_gap": 2,
+      "competition": 2,
+      "site_selection": 2,
+      "expansion": 2,
+      "policy_matching": 2,
+      "imports": 5
+    },
+    "rag_queries": 4,
+    "rag_documents": 3
+  },
+  "deterministic_metrics": {
+    "distance": [
+      0.0,
+      1.112
+    ],
+    "coverage": [
+      1.0
+    ],
+    "competition_index": [
+      28.0205
+    ],
+    "site_scores": [
+      69.75,
+      40.0
+    ],
+    "policy_summaries": [
+      {
+        "total": 3,
+        "pass": 1,
+        "partial": 1,
+        "fail": 1,
+        "unknown": 0
+      },
+      {
+        "total": 0,
+        "pass": 0,
+        "partial": 0,
+        "fail": 0,
+        "unknown": 0
+      }
+    ]
+  },
+  "failures": [],
+  "failure_attribution": []
+}

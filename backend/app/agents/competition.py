@@ -263,6 +263,7 @@ def analyze_competition(
 
     return {
         "status": "COMPLETED",
+        "competition_index": competition_index,
         "radius_km": input_data.radius_km,
         "nearby_station_count": len(rows),
         "nearby_stations": nearby,
