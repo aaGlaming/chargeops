@@ -300,3 +300,16 @@
 - 已实现扩容、补贴匹配和高等级选址报告的人工确认、拒绝原因和审计记录。
 - 已实现 Markdown 和 JSON 报告导出。
 - 详细记录见 `step26-decision-reports-confirmation.md`。
+
+## Step 27：实现 Vue 应用壳和路由菜单
+
+**状态：完成。**
+
+- 已创建 Vue 3、TypeScript、Vite 和 Element Plus 应用入口与构建配置。
+- 已实现侧栏、顶栏、面包屑、页面内容区、全局通知和登录页。
+- 已注册首页、站点、候选站点、5 个 Agent、RAG、运行记录和审计路由。
+- 已实现按角色过滤菜单、登录 Token 保存、路由守卫、Token 失效清理和退出登录。
+- 已实现 Axios Bearer Token、`X-Trace-ID`、统一错误和 `trace_id` 展示。
+- 已实现 ECharts 容器的自适应与销毁机制，并为业务页预留加载、空数据、失败和权限状态承载区。
+- 已通过 `npm run build` 构建验证。
+- 详细记录见 `step27-vue-app-shell-routing.md`。
