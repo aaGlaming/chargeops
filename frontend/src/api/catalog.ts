@@ -123,6 +123,10 @@ export function getStation(stationId: number) {
   return request<StationDetail>({ method: 'GET', url: `/stations/${stationId}` })
 }
 
+export function listConnectors(params: { station_id?: number; connector_type?: string; connector_status?: string; page?: number; page_size?: number } = {}) {
+  return request<{ items: Connector[]; page: PageMeta }>({ method: 'GET', url: '/connectors', params })
+}
+
 export function listStationConnectors(stationId: number) {
   return request<{ items: Connector[]; page: PageMeta }>({ method: 'GET', url: `/stations/${stationId}/connectors`, params: { page: 1, page_size: 500 } })
 }

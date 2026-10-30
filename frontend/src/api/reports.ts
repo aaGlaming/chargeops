@@ -1,11 +1,21 @@
 import { http, request } from './http'
 
-export interface Report {
+export interface ReportSummary {
   report_id: string
   run_id: string
   report_type: string
   title: string
   status: string
+  data_version?: string | null
+  calculation_rule_version?: string | null
+  confirmed_by?: number | null
+  confirmed_at?: string | null
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Report extends ReportSummary {
   conclusion?: string | null
   calculation_summary: Record<string, unknown>
   business_data: Record<string, unknown>
@@ -13,9 +23,6 @@ export interface Report {
   confirmation_type?: string | null
   confirmation_comment?: string | null
   rejection_reason?: string | null
-  data_version?: string | null
-  created_at: string
-  updated_at: string
 }
 
 export function createReport(runId: string, title?: string) {
@@ -40,3 +47,6 @@ export async function downloadReport(reportId: string, format: 'markdown' | 'jso
   URL.revokeObjectURL(url)
 }
 
+export function listReports(params: { report_type?: string; status?: string } = {}) {
+  return request<{ items: ReportSummary[] }>({ method: 'GET', url: '/reports', params })
+}

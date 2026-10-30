@@ -136,7 +136,7 @@ watch(() => route.query.station_id, (value) => {
     loadStationDetail(id)
   }
 }, { immediate: true })
-onMounted(() => { loadCatalogOptions(); loadStations() })
+onMounted(() => { Object.assign(filters, { regionCode: String(route.query.region_code || ''), operatorId: String(route.query.operator_id || '') }); loadCatalogOptions(); loadStations() })
 </script>
 
 <template>

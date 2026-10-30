@@ -82,12 +82,12 @@ export interface CandidatePayload {
   data_version?: string
 }
 
-export function listMetrics(stationId: number, params: { page?: number; page_size?: number } = {}) {
-  return request<{ items: Metric[]; page: PageMeta }>({ method: 'GET', url: `/stations/${stationId}/metrics`, params: { page: 1, page_size: 30, ...params } })
+export function listMetrics(stationId?: number, params: { page?: number; page_size?: number; start_date?: string; end_date?: string } = {}) {
+  return request<{ items: Metric[]; page: PageMeta }>({ method: 'GET', url: stationId ? `/stations/${stationId}/metrics` : '/metrics', params: { page: 1, page_size: 30, ...params } })
 }
 
-export function listFaults(stationId: number, params: { page?: number; page_size?: number } = {}) {
-  return request<{ items: Fault[]; page: PageMeta }>({ method: 'GET', url: `/stations/${stationId}/faults`, params: { page: 1, page_size: 30, ...params } })
+export function listFaults(stationId?: number, params: { page?: number; page_size?: number; started_from?: string; started_to?: string } = {}) {
+  return request<{ items: Fault[]; page: PageMeta }>({ method: 'GET', url: stationId ? `/stations/${stationId}/faults` : '/faults', params: { page: 1, page_size: 30, ...params } })
 }
 
 export function listCandidates(params: { region_code?: string; lifecycle_status?: string; data_status?: string; page?: number; page_size?: number } = {}) {

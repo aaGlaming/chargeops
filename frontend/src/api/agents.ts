@@ -73,6 +73,23 @@ export interface AgentRun {
   events: AgentEvent[]
 }
 
+export interface AgentRunSummary {
+  run_id: string
+  agent_type: AgentType
+  requested_by: number
+  status: string
+  data_version?: string | null
+  prompt_version?: string | null
+  model_name?: string | null
+  embedding_model?: string | null
+  stop_reason?: string | null
+  confirmation_status: string
+  started_at?: string | null
+  finished_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export function createAgentRun(payload: { agent_type: AgentType; input_payload: Record<string, unknown>; business_scope?: Record<string, unknown>; data_version?: string; prompt_version?: string }) {
   return request<AgentRun>({ method: 'POST', url: '/agent-runs', data: payload })
 }
@@ -83,6 +100,10 @@ export function executeAgentRun(runId: string, limits: { max_model_calls?: numbe
 
 export function getAgentRun(runId: string) {
   return request<AgentRun>({ method: 'GET', url: `/agent-runs/${runId}` })
+}
+
+export function listAgentRuns(agentType?: AgentType) {
+  return request<{ items: AgentRunSummary[] }>({ method: 'GET', url: '/agent-runs', params: agentType ? { agent_type: agentType } : undefined })
 }
 
 export function cancelAgentRun(runId: string) {

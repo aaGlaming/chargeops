@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Aim } from '@element-plus/icons-vue'
 import { getApiError } from '../api/http'
@@ -7,7 +8,8 @@ import { createCandidate, deleteCandidate, getCandidate, listCandidates, updateC
 import { useAuth } from '../stores/auth'
 
 const auth = useAuth()
-const filters = reactive({ regionCode: '', lifecycleStatus: '' })
+const route = useRoute()
+const filters = reactive({ regionCode: String(route.query.region_code || ''), lifecycleStatus: '' })
 const candidates = shallowRef<Candidate[]>([])
 const loading = shallowRef(false)
 const errorMessage = shallowRef('')
@@ -109,7 +111,7 @@ async function openDetail(candidateId: number) {
 }
 
 watch(() => [filters.regionCode, filters.lifecycleStatus], () => { page.value = 1; loadCandidates() })
-onMounted(loadCandidates)
+onMounted(async () => { await loadCandidates(); const candidateId = Number(route.query.candidate_id); if (Number.isFinite(candidateId) && candidateId > 0) openDetail(candidateId) })
 </script>
 
 <template>

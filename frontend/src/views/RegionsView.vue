@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from 'vue'
+import { useRoute } from 'vue-router'
 import { getApiError } from '../api/http'
 import { getRegion, listRegions, listStations, type RegionSummary, type Station } from '../api/catalog'
 
+const route = useRoute()
 const regions = shallowRef<RegionSummary[]>([])
 const selectedRegion = shallowRef<(RegionSummary & { child_regions?: RegionSummary[] }) | null>(null)
 const regionStations = shallowRef<Station[]>([])
@@ -25,7 +27,10 @@ async function loadRegions() {
   errorMessage.value = ''
   try {
     regions.value = (await listRegions({ page: 1, page_size: 200 })).items
-    if (!selectedCode.value && regions.value[0]) await selectRegion(regions.value[0].region_code)
+    const requestedCode = String(route.query.region_code || '')
+    if (requestedCode && regions.value.some((region) => region.region_code === requestedCode)) selectedCode.value = requestedCode
+    if (!selectedCode.value && regions.value[0]) selectedCode.value = regions.value[0].region_code
+    if (selectedCode.value) await selectRegion(selectedCode.value)
   } catch (error) {
     const detail = getApiError(error)
     errorMessage.value = detail.message
