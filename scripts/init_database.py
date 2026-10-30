@@ -85,14 +85,28 @@ def ensure_compatibility_columns(cursor) -> None:
             "skipped_count": "INT UNSIGNED NOT NULL DEFAULT 0 AFTER failed_count",
             "rollback_status": "VARCHAR(32) NOT NULL DEFAULT 'NOT_REQUESTED' AFTER status",
             "failure_report_file": "VARCHAR(500) NULL AFTER rollback_status",
+            "created_by": "BIGINT UNSIGNED NULL AFTER failure_report_file",
             "completed_at": "DATETIME NULL AFTER created_at",
         }.items():
             ensure_column(cursor, "import_batch", column, definition)
     if table_exists(cursor, "charging_station"):
         ensure_column(cursor, "charging_station", "external_station_key", "VARCHAR(128) NULL AFTER external_station_id")
+        ensure_column(cursor, "charging_station", "country_code", "CHAR(2) NULL AFTER zip_code")
+        ensure_column(cursor, "charging_station", "station_status", "VARCHAR(32) NULL AFTER country_code")
+        ensure_column(cursor, "charging_station", "access_type", "VARCHAR(32) NULL AFTER station_status")
+        ensure_column(cursor, "charging_station", "total_power_kw", "DECIMAL(12,3) NULL AFTER total_connector_count")
+        if column_exists(cursor, "charging_station", "country"):
+            cursor.execute("UPDATE charging_station SET country_code=COALESCE(country_code, country) WHERE country_code IS NULL")
+        if column_exists(cursor, "charging_station", "status_code"):
+            cursor.execute("UPDATE charging_station SET station_status=COALESCE(station_status, status_code) WHERE station_status IS NULL")
+        if column_exists(cursor, "charging_station", "access_code"):
+            cursor.execute("UPDATE charging_station SET access_type=COALESCE(access_type, access_code) WHERE access_type IS NULL")
         cursor.execute("UPDATE charging_station SET external_station_key=CAST(external_station_id AS CHAR) WHERE external_station_key IS NULL")
         if not index_exists(cursor, "charging_station", "uq_station_external_key_version"):
             cursor.execute("CREATE UNIQUE INDEX uq_station_external_key_version ON charging_station (external_station_key, data_version)")
+    if table_exists(cursor, "charging_connector"):
+        ensure_column(cursor, "charging_connector", "power_kw", "DECIMAL(12,3) NULL AFTER quantity")
+        ensure_column(cursor, "charging_connector", "connector_status", "VARCHAR(32) NULL AFTER power_kw")
     if table_exists(cursor, "region"):
         for column, definition in {
             "parent_region_id": "BIGINT UNSIGNED NULL AFTER region_code",

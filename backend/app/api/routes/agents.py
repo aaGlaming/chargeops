@@ -17,6 +17,14 @@ from app.tools.executor import execute_tool
 
 router = APIRouter(tags=["agents"])
 
+AGENT_MENU_PERMISSIONS = {
+    "coverage_gap": "menu.agent.coverage",
+    "competition": "menu.agent.competition",
+    "site_selection": "menu.agent.site_selection",
+    "expansion": "menu.agent.expansion",
+    "policy_matching": "menu.agent.policy",
+}
+
 
 @router.get("/agents/contracts", response_model=AgentContractListResponse, summary="List registered Agent tool contracts")
 def agent_contracts(agent_type: str | None = Query(default=None), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentContractListResponse:
@@ -40,6 +48,7 @@ def agent_contract(tool_name: str, user: UserContext = Depends(get_current_user)
 @router.post("/agent-runs", response_model=AgentRunDetail, status_code=201, summary="Create an Agent run state")
 def create_run(request: AgentRunCreateRequest, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
     require_permission(user, "agent.run.start", session=session)
+    require_permission(user, AGENT_MENU_PERMISSIONS[request.agent_type], session=session)
     return create_agent_run(session, user, request)
 
 

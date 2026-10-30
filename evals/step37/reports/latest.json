@@ -1,0 +1,876 @@
+{
+  "suite": "chargeops-step37-e2e-business-acceptance",
+  "suite_version": "step37-2026-10-30",
+  "generated_at": "2026-10-30T05:07:13.229712-07:00",
+  "status": "PASS",
+  "checks": {
+    "total": 133,
+    "passed": 133,
+    "failed": 0
+  },
+  "ids": {
+    "public_station_batch_id": 18,
+    "candidate_site_batch_id": 19,
+    "candidate_id": 63,
+    "document_id": 13,
+    "coverage_gap_run_id": "a8a2d52f-3b05-4787-a966-ceb44446b295",
+    "competition_run_id": "50a938b1-28f1-4487-836e-529385e81442",
+    "site_selection_run_id": "d4c64846-c896-4f35-9855-ccddf8847808",
+    "expansion_run_id": "5f06535f-cfb9-42bf-85ea-fe296a150a36",
+    "policy_matching_run_id": "c58bff8d-be0f-4868-99bb-349412062dba",
+    "coverage_gap_report_id": "194b91b8-ea8e-4e69-b3d2-12415462758e",
+    "competition_report_id": "74d2addc-6b10-4a9f-838c-05fa8a87bf24",
+    "site_selection_report_id": "f79b8dc3-4a4c-445c-9fa0-23837364b160",
+    "expansion_report_id": "dc616a9d-4a13-49b6-b737-2505e81f8688",
+    "policy_matching_report_id": "af59f842-1076-4518-a2dd-b16eab281502"
+  },
+  "failed_checks": [],
+  "all_checks": [
+    {
+      "name": "api:POST:/auth/login",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "auth:admin:token",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/auth/login",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "auth:analyst:token",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/health",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/ready",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "ready:mysql_chroma_embedding",
+      "passed": true,
+      "detail": {
+        "mysql": "ok",
+        "chroma": "ok",
+        "chat": "ok",
+        "embedding": "ok",
+        "rerank": "ok"
+      }
+    },
+    {
+      "name": "ready:chat_degraded_is_explicit",
+      "passed": true,
+      "detail": {
+        "mysql": "ok",
+        "chroma": "ok",
+        "chat": "ok",
+        "embedding": "ok",
+        "rerank": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/auth/me",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/regions",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/stations/map-points?region_code=CA&limit=20",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:POST:/imports/preview",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "import:public_station:preview_clean",
+      "passed": true,
+      "detail": {
+        "errors": []
+      }
+    },
+    {
+      "name": "api:POST:/imports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "import:public_station:mysql_write",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/stations?source_type=user_upload&data_version=2026-10-29&page_size=50",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "public_station:map_and_list",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/imports/preview",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "import:candidate_site:preview_clean",
+      "passed": true,
+      "detail": {
+        "errors": []
+      }
+    },
+    {
+      "name": "api:POST:/imports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "import:candidate_site:mysql_write",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/candidate-sites?source_type=user_upload&page_size=100",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "candidate_site:page_and_mapping",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/rag/documents",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "rag:upload_parse",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/rag/documents/13/chunks/preview",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "rag:chunk_preview",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/rag/documents/13/embeddings",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "rag:vector_index",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/rag/search",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "rag:search_and_original",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/rag/documents/13/source?start_char=0&end_char=488",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "rag:original_fragment",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:coverage_gap:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs/a8a2d52f-3b05-4787-a966-ceb44446b295/execute",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:coverage_gap:executed",
+      "passed": true,
+      "detail": {
+        "status": "COMPLETED",
+        "stop_reason": null
+      }
+    },
+    {
+      "name": "agent:coverage_gap:mysql_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:coverage_gap:rag_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:coverage_gap:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:coverage_gap:calculation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:competition:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs/50a938b1-28f1-4487-836e-529385e81442/execute",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:competition:executed",
+      "passed": true,
+      "detail": {
+        "status": "COMPLETED",
+        "stop_reason": null
+      }
+    },
+    {
+      "name": "agent:competition:mysql_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:competition:rag_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:competition:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:competition:calculation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:site_selection:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs/d4c64846-c896-4f35-9855-ccddf8847808/execute",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:site_selection:executed",
+      "passed": true,
+      "detail": {
+        "status": "COMPLETED",
+        "stop_reason": null
+      }
+    },
+    {
+      "name": "agent:site_selection:mysql_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:site_selection:rag_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:site_selection:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:site_selection:calculation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:expansion:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs/5f06535f-cfb9-42bf-85ea-fe296a150a36/execute",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:expansion:executed",
+      "passed": true,
+      "detail": {
+        "status": "WAITING_CONFIRMATION",
+        "stop_reason": "WAITING_CONFIRMATION"
+      }
+    },
+    {
+      "name": "agent:expansion:mysql_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:expansion:rag_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:expansion:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:expansion:calculation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:policy_matching:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/agent-runs/c58bff8d-be0f-4868-99bb-349412062dba/execute",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "agent:policy_matching:executed",
+      "passed": true,
+      "detail": {
+        "status": "COMPLETED",
+        "stop_reason": null
+      }
+    },
+    {
+      "name": "agent:policy_matching:mysql_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:policy_matching:rag_trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:policy_matching:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:policy_matching:calculation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:coverage_gap:business_status",
+      "passed": true,
+      "detail": {
+        "expected": "COMPLETED",
+        "actual": "COMPLETED"
+      }
+    },
+    {
+      "name": "agent:competition:business_status",
+      "passed": true,
+      "detail": {
+        "expected": "COMPLETED",
+        "actual": "COMPLETED"
+      }
+    },
+    {
+      "name": "agent:site_selection:business_status",
+      "passed": true,
+      "detail": {
+        "expected": "COMPLETED",
+        "actual": "COMPLETED"
+      }
+    },
+    {
+      "name": "agent:expansion:business_status",
+      "passed": true,
+      "detail": {
+        "expected": "WAITING_CONFIRMATION",
+        "actual": "WAITING_CONFIRMATION"
+      }
+    },
+    {
+      "name": "agent:policy_matching:business_status",
+      "passed": true,
+      "detail": {
+        "expected": "COMPLETED",
+        "actual": "COMPLETED"
+      }
+    },
+    {
+      "name": "agent:expansion:manual_gate",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:coverage_gap:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "report:coverage_gap:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/reports/194b91b8-ea8e-4e69-b3d2-12415462758e/export?format=json",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:coverage_gap:export",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:competition:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "report:competition:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/reports/74d2addc-6b10-4a9f-838c-05fa8a87bf24/export?format=json",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:competition:export",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:site_selection:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "report:site_selection:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/reports/f79b8dc3-4a4c-445c-9fa0-23837364b160/export?format=json",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:site_selection:export",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:expansion:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "report:expansion:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/reports/dc616a9d-4a13-49b6-b737-2505e81f8688/export?format=json",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:expansion:export",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports/dc616a9d-4a13-49b6-b737-2505e81f8688/confirmation",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:expansion:manual_confirmation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:policy_matching:created",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "report:policy_matching:evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/reports/af59f842-1076-4518-a2dd-b16eab281502/export?format=json",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:policy_matching:export",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:POST:/reports/af59f842-1076-4518-a2dd-b16eab281502/confirmation",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "report:policy_matching:manual_confirmation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "agent:expansion:approved_after_confirmation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "api:GET:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/audit-logs?page=1&page_size=10",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/monitoring/overview",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:GET:/agents/contracts?agent_type=coverage_gap",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "api:POST:/agent-runs",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "ok"
+      }
+    },
+    {
+      "name": "permissions:analyst_cannot_start_expansion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:login:rendered",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:login:redirect_dashboard",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/dashboard",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/imports",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/regions",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/stations",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/candidates",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/agents/coverage",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/agents/competition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/agents/site-selection",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/agents/expansion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/agents/policy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/rag",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/runs",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/audit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:route:/monitoring",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:empty_route_redirect",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend:console_errors",
+      "passed": true,
+      "detail": []
+    }
+  ]
+}

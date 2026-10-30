@@ -172,7 +172,7 @@ def _validate(dataset_type: DatasetType, rows: list[dict[str, Any]], mapping: di
                 continue
             try:
                 if field.kind == "number":
-                    _number(value)
+                    _number(value, non_negative=field.key not in {"latitude", "longitude"})
                 elif field.kind == "date":
                     _date(value)
                 elif field.kind == "datetime":
@@ -229,42 +229,46 @@ def _operator_id(session: Session, operator_name: str | None, data_version: str,
 
 def _insert_row(session: Session, dataset_type: DatasetType, row: dict[str, str], *, batch_id: int, file_name: str, data_version: str, user: UserContext) -> None:
     now = _now()
-    source = {"source_type": "user_upload", "source_file": file_name[:500], "data_version": data_version, "import_batch_id": batch_id, "created_at": now, "updated_at": now}
+    source = {"source_type": "user_upload", "source_url": "", "source_file": file_name[:500], "data_version": data_version, "import_batch_id": batch_id, "batch_id": batch_id, "created_at": now, "updated_at": now}
     if dataset_type == "stations":
         external_id = int(float(row["external_station_id"]))
-        region_id = _region_id(session, row.get("region_code"))
+        # The legacy public station table requires a region FK while the
+        # upload template historically omitted region_code.  ChargeOps' public
+        # snapshot is California, so default that field for this compatibility
+        # path and still honor an explicitly supplied region.
+        region_id = _region_id(session, row.get("region_code") or "CA")
         operator_id = _operator_id(session, row.get("operator_name"), data_version, batch_id)
         session.execute(text("""INSERT INTO charging_station
-            (external_station_id, external_station_key, region_id, operator_id, station_name, street_address, city, state, zip_code, country_code, latitude, longitude, station_status, access_type, facility_type, total_connector_count, total_power_kw, source_type, source_file, data_version, import_batch_id, created_at, updated_at)
-            VALUES (:external_id, :external_key, :region_id, :operator_id, :station_name, :street_address, :city, :state, :zip_code, :country_code, :latitude, :longitude, :station_status, :access_type, :facility_type, :connector_count, :power_kw, 'user_upload', :source_file, :data_version, :batch_id, :created_at, :updated_at)
+            (external_station_id, external_station_key, region_id, operator_id, station_name, street_address, city, state, zip_code, country_code, latitude, longitude, station_status, access_type, facility_type, total_connector_count, total_power_kw, source_type, source_url, source_file, data_version, import_batch_id, created_at, updated_at)
+            VALUES (:external_id, :external_key, :region_id, :operator_id, :station_name, :street_address, :city, :state, :zip_code, :country_code, :latitude, :longitude, :station_status, :access_type, :facility_type, :connector_count, :power_kw, 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_at, :updated_at)
             ON DUPLICATE KEY UPDATE station_name=VALUES(station_name), latitude=VALUES(latitude), longitude=VALUES(longitude), station_status=VALUES(station_status), access_type=VALUES(access_type), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "external_id": external_id, "external_key": row.get("external_station_key") or None, "region_id": region_id, "operator_id": operator_id, "station_name": row["station_name"], "street_address": row.get("street_address") or None, "city": row.get("city") or None, "state": row.get("state") or None, "zip_code": row.get("zip_code") or None, "country_code": row.get("country_code") or None, "latitude": _number(row.get("latitude"), non_negative=False), "longitude": _number(row.get("longitude"), non_negative=False), "station_status": row["station_status"], "access_type": row["access_type"], "facility_type": row.get("facility_type") or None, "connector_count": _number(row.get("total_connector_count"), integer=True) or 0, "power_kw": _number(row.get("total_power_kw"))})
         return
     if dataset_type == "connectors":
         station_id = _station_id(session, row["station_external_id"], data_version)
-        session.execute(text("""INSERT INTO charging_connector (station_id, connector_type, quantity, power_kw, connector_status, source_type, source_file, data_version, import_batch_id, created_at, updated_at)
-            VALUES (:station_id, :connector_type, :quantity, :power_kw, :connector_status, 'user_upload', :source_file, :data_version, :batch_id, :created_at, :updated_at)
+        session.execute(text("""INSERT INTO charging_connector (station_id, connector_type, quantity, power_kw, connector_status, source_type, source_url, source_file, data_version, import_batch_id, created_at, updated_at)
+            VALUES (:station_id, :connector_type, :quantity, :power_kw, :connector_status, 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_at, :updated_at)
             ON DUPLICATE KEY UPDATE quantity=VALUES(quantity), power_kw=VALUES(power_kw), connector_status=VALUES(connector_status), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "station_id": station_id, "connector_type": row["connector_type"], "quantity": _number(row["quantity"], integer=True), "power_kw": _number(row.get("power_kw")), "connector_status": row.get("connector_status") or "UNKNOWN"})
         return
     if dataset_type == "metrics":
         station_id = _station_id(session, row["station_external_id"], data_version)
-        session.execute(text("""INSERT INTO station_operation_metric (station_id, metric_date, metric_hour, timezone, charging_sessions, energy_kwh, peak_power_kw, occupancy_rate, avg_session_minutes, data_as_of, source_type, source_file, data_version, import_batch_id, created_at, updated_at)
-            VALUES (:station_id, :metric_date, :metric_hour, 'UTC', :charging_sessions, :energy_kwh, :peak_power_kw, :occupancy_rate, :avg_session_minutes, :data_as_of, 'user_upload', :source_file, :data_version, :batch_id, :created_at, :updated_at)
+        session.execute(text("""INSERT INTO station_operation_metric (station_id, metric_date, metric_hour, timezone, charging_sessions, energy_kwh, peak_power_kw, occupancy_rate, avg_session_minutes, data_as_of, source_type, source_url, source_file, data_version, import_batch_id, created_at, updated_at)
+            VALUES (:station_id, :metric_date, :metric_hour, 'UTC', :charging_sessions, :energy_kwh, :peak_power_kw, :occupancy_rate, :avg_session_minutes, :data_as_of, 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_at, :updated_at)
             ON DUPLICATE KEY UPDATE charging_sessions=VALUES(charging_sessions), energy_kwh=VALUES(energy_kwh), peak_power_kw=VALUES(peak_power_kw), occupancy_rate=VALUES(occupancy_rate), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "station_id": station_id, "metric_date": _date(row["metric_date"]), "metric_hour": _number(row.get("metric_hour"), integer=True), "charging_sessions": _number(row.get("charging_sessions"), integer=True), "energy_kwh": _number(row.get("energy_kwh")), "peak_power_kw": _number(row.get("peak_power_kw")), "occupancy_rate": _number(row.get("occupancy_rate"), non_negative=False), "avg_session_minutes": _number(row.get("avg_session_minutes")), "data_as_of": _date(row.get("data_as_of"))})
         return
     if dataset_type == "faults":
         station_id = _station_id(session, row["station_external_id"], data_version)
-        session.execute(text("""INSERT INTO station_fault_event (station_id, external_fault_id, fault_type, severity, started_at, recovered_at, affected_connectors, root_cause, status, data_as_of, source_type, source_file, data_version, import_batch_id, created_at, updated_at)
-            VALUES (:station_id, :external_fault_id, :fault_type, :severity, :started_at, :recovered_at, :affected_connectors, :root_cause, :status, :data_as_of, 'user_upload', :source_file, :data_version, :batch_id, :created_at, :updated_at)
+        session.execute(text("""INSERT INTO station_fault_event (station_id, external_fault_id, fault_type, severity, started_at, recovered_at, affected_connectors, root_cause, status, data_as_of, source_type, source_url, source_file, data_version, import_batch_id, created_at, updated_at)
+            VALUES (:station_id, :external_fault_id, :fault_type, :severity, :started_at, :recovered_at, :affected_connectors, :root_cause, :status, :data_as_of, 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_at, :updated_at)
             ON DUPLICATE KEY UPDATE severity=VALUES(severity), recovered_at=VALUES(recovered_at), status=VALUES(status), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "station_id": station_id, "external_fault_id": row.get("external_fault_id") or None, "fault_type": row["fault_type"], "severity": row["severity"], "started_at": _datetime(row["started_at"]), "recovered_at": _datetime(row.get("recovered_at")), "affected_connectors": _number(row.get("affected_connectors"), integer=True), "root_cause": row.get("root_cause") or None, "status": row.get("status") or "OPEN", "data_as_of": _date(row.get("data_as_of"))})
         return
     if dataset_type == "candidates":
-        session.execute(text("""INSERT INTO candidate_site (external_candidate_id, region_id, site_name, city, state, latitude, longitude, area_sqm, parking_spaces, electric_capacity_kw, budget_usd, traffic_index, population_density, planned_open_date, data_as_of, data_status, lifecycle_status, source_type, source_file, data_version, import_batch_id, created_by, created_at, updated_at)
-            VALUES (:external_id, :region_id, :site_name, :city, :state, :latitude, :longitude, :area_sqm, :parking_spaces, :capacity, :budget, :traffic, :population, :planned_open_date, :data_as_of, 'CURRENT', 'DRAFT', 'user_upload', :source_file, :data_version, :batch_id, :created_by, :created_at, :updated_at)
+        session.execute(text("""INSERT INTO candidate_site (external_candidate_id, region_id, site_name, city, state, latitude, longitude, area_sqm, parking_spaces, electric_capacity_kw, budget_usd, traffic_index, population_density, planned_open_date, data_as_of, data_status, lifecycle_status, source_type, source_url, source_file, data_version, import_batch_id, created_by, created_at, updated_at)
+            VALUES (:external_id, :region_id, :site_name, :city, :state, :latitude, :longitude, :area_sqm, :parking_spaces, :capacity, :budget, :traffic, :population, :planned_open_date, :data_as_of, 'CURRENT', 'DRAFT', 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_by, :created_at, :updated_at)
             ON DUPLICATE KEY UPDATE site_name=VALUES(site_name), latitude=VALUES(latitude), longitude=VALUES(longitude), budget_usd=VALUES(budget_usd), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "external_id": row["candidate_site_external_id"], "region_id": _region_id(session, row.get("region_code")), "site_name": row["site_name"], "city": row.get("city") or None, "state": row.get("state") or None, "latitude": _number(row.get("latitude"), non_negative=False), "longitude": _number(row.get("longitude"), non_negative=False), "area_sqm": _number(row.get("area_sqm")), "parking_spaces": _number(row.get("parking_spaces"), integer=True), "capacity": _number(row.get("electric_capacity_kw")), "budget": _number(row.get("budget_usd")), "traffic": _number(row.get("traffic_index"), non_negative=False), "population": _number(row.get("population_density")), "planned_open_date": _date(row.get("planned_open_date")), "data_as_of": _date(row.get("data_as_of")), "created_by": user.user_id})
         return
     station_id = _station_id(session, row["station_external_id"], data_version)
-    session.execute(text("""INSERT INTO expansion_plan (external_case_id, station_id, existing_fast_connectors, existing_slow_connectors, peak_occupancy_rate, fault_count_30d, available_capacity_kw, proposed_fast_connectors, proposed_slow_connectors, requested_budget_usd, priority, preconditions, confirmation_status, source_type, source_file, data_version, import_batch_id, created_at, updated_at)
-        VALUES (:external_id, :station_id, :existing_fast, :existing_slow, :peak_occupancy, :fault_count, :capacity, :proposed_fast, :proposed_slow, :budget, :priority, :preconditions, 'WAITING_CONFIRMATION', 'user_upload', :source_file, :data_version, :batch_id, :created_at, :updated_at)
+    session.execute(text("""INSERT INTO expansion_plan (external_case_id, station_id, existing_fast_connectors, existing_slow_connectors, peak_occupancy_rate, fault_count_30d, available_capacity_kw, proposed_fast_connectors, proposed_slow_connectors, requested_budget_usd, priority, preconditions, confirmation_status, source_type, source_url, source_file, data_version, import_batch_id, created_at, updated_at)
+        VALUES (:external_id, :station_id, :existing_fast, :existing_slow, :peak_occupancy, :fault_count, :capacity, :proposed_fast, :proposed_slow, :budget, :priority, :preconditions, 'WAITING_CONFIRMATION', 'user_upload', :source_url, :source_file, :data_version, :batch_id, :created_at, :updated_at)
         ON DUPLICATE KEY UPDATE priority=VALUES(priority), requested_budget_usd=VALUES(requested_budget_usd), import_batch_id=VALUES(import_batch_id), updated_at=VALUES(updated_at)"""), {**source, "external_id": row.get("case_external_id") or None, "station_id": station_id, "existing_fast": _number(row.get("existing_fast_connectors"), integer=True), "existing_slow": _number(row.get("existing_slow_connectors"), integer=True), "peak_occupancy": _number(row.get("peak_occupancy_rate"), non_negative=False), "fault_count": _number(row.get("fault_count_30d"), integer=True), "capacity": _number(row.get("available_capacity_kw")), "proposed_fast": _number(row.get("proposed_fast_connectors"), integer=True), "proposed_slow": _number(row.get("proposed_slow_connectors"), integer=True), "budget": _number(row.get("requested_budget_usd")), "priority": row.get("priority") or "MEDIUM", "preconditions": json.dumps([row.get("preconditions")], ensure_ascii=False) if row.get("preconditions") else None})
 
 
@@ -278,8 +282,9 @@ def import_rows(session: Session, user: UserContext, request: ImportConfirmReque
     now = _now()
     batch_key = f"upload-{uuid4()}"
     source_sha256 = hashlib.sha256(json.dumps(request.rows, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")).hexdigest()
-    session.execute(text("""INSERT INTO import_batch (batch_key, dataset_type, source_type, source_file, source_sha256, data_version, row_count, status, rollback_status, created_by, created_at)
-        VALUES (:batch_key, :dataset_type, 'user_upload', :source_file, :source_sha256, :data_version, :row_count, 'PENDING', 'NOT_REQUESTED', :created_by, :created_at)"""), {"batch_key": batch_key, "dataset_type": request.dataset_type, "source_file": request.file_name, "source_sha256": source_sha256, "data_version": request.data_version, "row_count": len(request.rows), "created_by": user.user_id, "created_at": now})
+    region_code = next((_text(row.get(request.mapping.get("region_code", "region_code"))) for row in request.rows if _text(row.get(request.mapping.get("region_code", "region_code")))), "*")
+    session.execute(text("""INSERT INTO import_batch (batch_key, dataset_type, source_type, source_url, source_file, source_sha256, region_code, data_version, row_count, status, rollback_status, created_by, created_at)
+        VALUES (:batch_key, :dataset_type, 'user_upload', :source_url, :source_file, :source_sha256, :region_code, :data_version, :row_count, 'PENDING', 'NOT_REQUESTED', :created_by, :created_at)"""), {"batch_key": batch_key, "dataset_type": request.dataset_type, "source_url": "", "source_file": request.file_name, "source_sha256": source_sha256, "region_code": region_code, "data_version": request.data_version, "row_count": len(request.rows), "created_by": user.user_id, "created_at": now})
     batch_id = int(session.execute(text("SELECT LAST_INSERT_ID()")).scalar_one())
     errors: list[dict[str, Any]] = []
     success = 0
@@ -295,8 +300,8 @@ def import_rows(session: Session, user: UserContext, request: ImportConfirmReque
         except Exception as exc:
             error = {"row": row_number, "field": None, "level": "error", "message": str(exc)[:1000], "suggestion": "修复该行后重新上传"}
             errors.append(error)
-            session.execute(text("""INSERT INTO import_row_error (import_batch_id, source_file, source_row_number, error_code, error_message, raw_payload, created_at)
-                VALUES (:batch_id, :source_file, :row_number, 'IMPORT_ROW_FAILED', :message, :raw_payload, :created_at)"""), {"batch_id": batch_id, "source_file": request.file_name, "row_number": row_number, "message": str(exc)[:1000], "raw_payload": json.dumps(_redact(raw_row), ensure_ascii=False, default=str), "created_at": _now()})
+            session.execute(text("""INSERT INTO import_row_error (import_batch_id, source_file, source_row_number, field_name, error_code, error_message, raw_payload, created_at)
+                VALUES (:batch_id, :source_file, :row_number, NULL, 'IMPORT_ROW_FAILED', :message, :raw_payload, :created_at)"""), {"batch_id": batch_id, "source_file": request.file_name, "row_number": row_number, "message": str(exc)[:1000], "raw_payload": json.dumps(_redact(raw_row), ensure_ascii=False, default=str), "created_at": _now()})
     status = "IMPORTED" if not errors else ("FAILED" if not success else "PARTIAL")
     session.execute(text("UPDATE import_batch SET success_count=:success, failed_count=:failed, status=:status, completed_at=:completed_at WHERE id=:id"), {"success": success, "failed": len(errors), "status": status, "completed_at": _now(), "id": batch_id})
     record_audit_event(session, action="IMPORT_BATCH_COMPLETED", resource_type="import_batch", resource_id=str(batch_id), actor_user_id=user.user_id, metadata={"import_batch_id": batch_id, "dataset_type": request.dataset_type, "success_count": success, "failed_count": len(errors)})
@@ -319,7 +324,7 @@ def get_batch(session: Session, batch_id: int, *, user: UserContext) -> ImportBa
     row = session.execute(text("SELECT * FROM import_batch WHERE id=:id"), {"id": batch_id}).mappings().one_or_none()
     if row is None or ("SYSTEM_ADMIN" not in user.role_codes and row.get("created_by") != user.user_id):
         return None
-    errors = session.execute(text("SELECT source_row_number AS row, field_name AS field, error_code, error_message AS message, raw_payload FROM import_row_error WHERE import_batch_id=:id ORDER BY id"), {"id": batch_id}).mappings().all()
+    errors = session.execute(text("SELECT source_row_number AS `row`, field_name AS field, error_code, error_message AS message, raw_payload FROM import_row_error WHERE import_batch_id=:id ORDER BY id"), {"id": batch_id}).mappings().all()
     return ImportBatchDetail(**_summary(row).model_dump(), errors=[dict(item) for item in errors])
 
 

@@ -115,7 +115,10 @@ class _ChromaCollection:
         for item in collections or []:
             if item.get("name") == self.name:
                 return str(item["id"])
-        created = self._request("POST", "/collections", json={"name": self.name, "get_or_create": True, "metadata": {}})
+        # Chroma v2 rejects an empty metadata object on collection creation.
+        # Keep a stable marker so both fresh and upgraded Chroma instances
+        # accept the request.
+        created = self._request("POST", "/collections", json={"name": self.name, "get_or_create": True, "metadata": {"owner": "chargeops"}})
         if not created or not created.get("id"):
             raise EmbeddingServiceError("CHROMA_COLLECTION_FAILED", "无法创建 Chroma collection")
         return str(created["id"])

@@ -143,7 +143,12 @@ def list_agent_runs(session: Session, *, requested_by: int | None = None, agent_
         conditions.append("agent_type=:agent_type")
         params["agent_type"] = agent_type
     where = " WHERE " + " AND ".join(conditions) if conditions else ""
-    rows = session.execute(text(f"SELECT * FROM agent_run{where} ORDER BY created_at DESC LIMIT 200"), params).mappings().all()
+    # Avoid sorting large JSON state_snapshot/input_payload columns.  The
+    # list view only needs the summary columns; the detail endpoint loads the
+    # full row on demand.
+    rows = session.execute(text(f"""SELECT run_id, agent_type, requested_by, status, data_version, prompt_version,
+        model_name, embedding_model, stop_reason, confirmation_status, started_at, finished_at, created_at, updated_at
+        FROM agent_run{where} ORDER BY created_at DESC LIMIT 200"""), params).mappings().all()
     return AgentRunListResponse(items=[_summary(row) for row in rows])
 
 

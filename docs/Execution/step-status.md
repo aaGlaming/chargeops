@@ -424,3 +424,13 @@
 - 已验证扩容建议保持高风险和 `WAITING_CONFIRMATION`，不会直接批准；幂等键冲突返回原调用或冲突错误。
 - 修复了 Agent 状态补丁绕过 Pydantic 重校验的问题，未知字段、非法枚举和过大补丁会被拒绝。
 - `python scripts/evaluate_agents_security.py --strict` 共 65 项检查全部通过；详细结果见 `step36-agent-security.md` 和 `evals/step36/security_findings.json`。
+
+## Step 37：执行端到端业务验收
+
+**状态：完成。**
+
+- 已按业务链路验收公开站点和候选站点导入、RAG 全链路、五个 Agent、人工确认、报告导出、审计监控和权限边界。
+- 已通过真实 MySQL、Chroma、Embedding 服务和 Vue/Vite 页面检查登录、菜单切换、刷新、空路由和控制台错误。
+- 本次验收共 133 项检查，133 项通过，0 项失败。
+- 已补充旧数据库字段兼容和 Chroma v2 非空 collection metadata 处理，并验证向量批次为 `COMPLETED`。
+- 详细记录见 `step37-e2e-acceptance.md` 和 `evals/step37/reports/latest.json`。
