@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.agents.registry import TOOL_CONTRACTS, contracts_for_agent, get_tool_contract
 from app.api.routes.auth import get_current_user
+from app.config import Settings, get_settings
 from app.db import get_db
 from app.errors import AppError
-from app.schemas.agents import AgentContractListResponse, AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunTransitionRequest
+from app.schemas.agents import AgentContractListResponse, AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunTransitionRequest, ToolExecuteRequest, ToolExecuteResponse
 from app.services.agent_runs import create_agent_run, get_agent_run, list_agent_runs, transition_agent_run
 from app.services.auth import UserContext, require_permission
+from app.tools.executor import execute_tool
 
 
 router = APIRouter(tags=["agents"])
@@ -67,3 +69,14 @@ def transition_run(run_id: str, request: AgentRunTransitionRequest, user: UserCo
     if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
         raise AppError("FORBIDDEN", "无权更新该 Agent 运行", status_code=403)
     return transition_agent_run(session, user, run_id, status=request.status, current_stage=request.current_stage, stop_reason=request.stop_reason, confirmation_status=request.confirmation_status, state_patch=request.state_patch)
+
+
+@router.post("/agent-runs/{run_id}/tools/{tool_name:path}", response_model=ToolExecuteResponse, summary="Execute a registered Agent tool")
+def execute_agent_tool(run_id: str, tool_name: str, request: ToolExecuteRequest, settings: Settings = Depends(get_settings), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> ToolExecuteResponse:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权执行该 Agent 运行的工具", status_code=403)
+    return execute_tool(session, settings, user, run_id, tool_name, request.params, request.idempotency_key)

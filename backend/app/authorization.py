@@ -129,9 +129,9 @@ DEFAULT_DATASET_READ: dict[str, frozenset[str]] = {
 
 DEFAULT_DATASET_WRITE: dict[str, frozenset[str]] = {
     "OPS_ANALYST": frozenset(),
-    "SITE_PLANNER": frozenset({"user_upload"}),
-    "OPS_LEAD": frozenset({"user_upload", "synthetic"}),
-    "POLICY_ADMIN": frozenset({"user_upload"}),
+    "SITE_PLANNER": frozenset({"user_upload", "agent"}),
+    "OPS_LEAD": frozenset({"user_upload", "synthetic", "agent"}),
+    "POLICY_ADMIN": frozenset({"user_upload", "agent"}),
     "AUDITOR": frozenset(),
     "SYSTEM_ADMIN": frozenset({"public", "user_upload", "synthetic", "agent"}),
 }

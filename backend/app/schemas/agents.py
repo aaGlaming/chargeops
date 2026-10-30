@@ -95,3 +95,18 @@ class AgentRunListResponse(BaseModel):
 
 class AgentContractListResponse(BaseModel):
     items: list[ToolContract]
+
+
+class ToolExecuteRequest(BaseModel):
+    params: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = Field(default=None, max_length=255)
+
+
+class ToolExecuteResponse(BaseModel):
+    run_id: str
+    tool_name: str
+    tool_call_id: int
+    status: str
+    result: dict[str, Any] = Field(default_factory=dict)
+    error: dict[str, Any] | None = None
+    duration_ms: int | None = None

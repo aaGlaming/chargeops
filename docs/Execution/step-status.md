@@ -211,3 +211,13 @@
 - 已实现 Agent 运行创建、状态转换、状态快照、工具调用、模型调用和人工确认事件记录。
 - 已新增 `agent_run_event` 表和 `agent.run.read` / `agent.run.start` 权限。
 - 详细记录见 `step18-agent-state-tool-contracts.md`。
+
+## Step 19：实现 Agent 工具执行层
+
+**状态：完成。**
+
+- 已实现统一 Agent 工具执行入口，覆盖 MySQL 查询、确定性计算、RAG 检索和结果写入。
+- 执行前校验契约、Agent 类型、运行状态、权限、数据范围、数据版本、风险等级和幂等要求。
+- 执行后记录输入/输出摘要、耗时、错误、重试标记、运行快照和审计事件。
+- 结果写入支持评分、扩容方案和分析摘要；重复写入按幂等键返回原结果。
+- 详细记录见 `step19-agent-tool-execution.md`。
