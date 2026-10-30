@@ -20,6 +20,7 @@ from app.agents.coverage_gap import COVERAGE_GAP_SYSTEM_PROMPT
 from app.agents.competition import COMPETITION_SYSTEM_PROMPT
 from app.agents.site_selection import SITE_SELECTION_SYSTEM_PROMPT
 from app.agents.expansion import EXPANSION_SYSTEM_PROMPT
+from app.agents.policy_matching import POLICY_MATCHING_SYSTEM_PROMPT
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import SupervisorExecuteRequest
@@ -324,7 +325,28 @@ class Supervisor:
                 ("fault.query", {**base, "station_ids": station_ids, "all_pages": True, "max_rows": 100000, "page": 1, "page_size": 500, "started_from": f"{start_date}T00:00:00" if start_date else None, "started_to": f"{end_date}T23:59:59" if end_date else None}, False),
             ]
         if agent_type == "policy_matching":
-            return [("policy.query", {**base, "region_code": payload.get("region_code"), "page": 1, "page_size": 100}, True)]
+            candidate_ids = payload.get("candidate_site_ids", [])
+            effective_date = payload.get("planned_date") or date.today().isoformat()
+            return [
+                (
+                    "candidate.query",
+                    {**base, "region_code": payload.get("region_code"), "candidate_ids": candidate_ids, "page": 1, "page_size": 100},
+                    bool(candidate_ids),
+                ),
+                (
+                    "policy.query",
+                    {
+                        **base,
+                        "region_code": payload.get("region_code"),
+                        "subject_type": payload.get("subject_type"),
+                        "policy_type": payload.get("policy_type"),
+                        "effective_date": effective_date,
+                        "page": 1,
+                        "page_size": 100,
+                    },
+                    True,
+                ),
+            ]
         raise AppError("AGENT_TYPE_UNSUPPORTED", "不支持的 Agent 类型", status_code=400)
 
     def _read_business(self, state: AgentGraphState) -> AgentGraphState:
@@ -549,12 +571,18 @@ class Supervisor:
             }
         policies = results.get("policy.query", {}).get("items", [])
         subject = {
+            **payload,
             "region_code": payload.get("region_code"),
             "subject_type": payload.get("subject_type"),
             "planned_scale_kw": payload.get("planned_scale_kw"),
             "planned_date": payload.get("planned_date"),
         }
-        return "policy.match", {"policies": policies, "subject": subject}
+        return "policy.match", {
+            **payload,
+            "policies": policies,
+            "candidates": results.get("candidate.query", {}).get("items", []),
+            "subject": subject,
+        }
 
     def _calculate(self, state: AgentGraphState) -> AgentGraphState:
         tool_name, params = self._calculation_params(state)
@@ -609,6 +637,13 @@ class Supervisor:
                 f"已生成 {len(result.get('plans', []))} 个扩容方案，新增快充 {metrics.get('total_proposed_fast_connectors', 0)} 个，"
                 f"估算预算 {metrics.get('total_estimated_budget_usd', 0):.2f}，数据可信度 {result.get('data_confidence_score', 0):.2f}，发布前需要人工确认。"
             )
+        if agent_type == "policy_matching":
+            summary = result.get("match_summary", {})
+            return (
+                f"已匹配 {summary.get('total', 0)} 条政策结果，通过 {summary.get('pass', 0)} 条，"
+                f"部分通过 {summary.get('partial', 0)} 条，不通过 {summary.get('fail', 0)} 条，"
+                f"无法判断 {summary.get('unknown', 0)} 条，缺少材料 {len(result.get('missing_materials', []))} 项。"
+            )
         return f"已匹配 {len(result.get('matched_policies', []))} 条政策，缺失条件 {len(result.get('missing_conditions', []))} 项。"
 
     def _explain(self, state: AgentGraphState) -> AgentGraphState:
@@ -636,6 +671,7 @@ class Supervisor:
                         else COMPETITION_SYSTEM_PROMPT if state.get("agent_type") == "competition"
                         else SITE_SELECTION_SYSTEM_PROMPT if state.get("agent_type") == "site_selection"
                         else EXPANSION_SYSTEM_PROMPT if state.get("agent_type") == "expansion"
+                        else POLICY_MATCHING_SYSTEM_PROMPT if state.get("agent_type") == "policy_matching"
                         else "supervisor-rule-v1"
                     ),
                 },

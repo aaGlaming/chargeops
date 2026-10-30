@@ -114,10 +114,21 @@ class ExpansionInput(AgentInputBase):
 
 
 class PolicyMatchingInput(AgentInputBase):
+    prompt_version: str = Field(default="policy-matching-v1", max_length=64)
     region_code: str = Field(min_length=1, max_length=32)
     subject_type: str = Field(min_length=1, max_length=64)
+    candidate_site_ids: list[int] = Field(default_factory=list, max_length=100)
+    site_type: str | None = Field(default=None, max_length=64)
+    policy_type: str | None = Field(default=None, max_length=64)
     planned_scale_kw: float | None = Field(default=None, ge=0)
+    planned_fast_connectors: int | None = Field(default=None, ge=0)
+    planned_slow_connectors: int | None = Field(default=None, ge=0)
+    project_budget_usd: float | None = Field(default=None, ge=0)
+    available_materials: list[str] = Field(default_factory=list, max_length=100)
+    attributes: dict[str, Any] = Field(default_factory=dict)
     planned_date: date | None = None
+    policy_rule_version: str = Field(default="policy-matching-v1", max_length=64)
+    stale_after_days: int = Field(default=90, ge=1, le=3650)
 
 
 class AgentOutputBase(BaseModel):
@@ -176,8 +187,19 @@ class ExpansionOutput(AgentOutputBase):
 
 class PolicyMatchingOutput(AgentOutputBase):
     matched_policies: list[dict[str, Any]] = Field(default_factory=list)
+    policy_matches: list[dict[str, Any]] = Field(default_factory=list)
+    partial_policies: list[dict[str, Any]] = Field(default_factory=list)
+    failed_policies: list[dict[str, Any]] = Field(default_factory=list)
+    unknown_policies: list[dict[str, Any]] = Field(default_factory=list)
     missing_conditions: list[str] = Field(default_factory=list)
     required_materials: list[str] = Field(default_factory=list)
+    missing_materials: list[str] = Field(default_factory=list)
+    missing_fields: list[str] = Field(default_factory=list)
+    policy_versions: list[str] = Field(default_factory=list)
+    deadlines: list[str] = Field(default_factory=list)
+    match_summary: dict[str, int] = Field(default_factory=dict)
+    data_confidence_score: float | None = None
+    scoring_rule_version: str | None = None
 
 
 class AgentGraphState(TypedDict, total=False):

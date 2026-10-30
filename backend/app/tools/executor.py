@@ -21,6 +21,7 @@ from app.agents.coverage_gap import analyze_coverage_gap
 from app.agents.competition import analyze_competition
 from app.agents.site_selection import analyze_site_selection
 from app.agents.expansion import analyze_expansion
+from app.agents.policy_matching import analyze_policy_matching
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import ToolExecuteResponse
@@ -184,32 +185,10 @@ def _expansion(params: dict[str, Any]) -> dict[str, Any]:
 
 def _policy_match(params: dict[str, Any]) -> dict[str, Any]:
     policies = params.get("policies") or []
-    subject = params.get("subject") or {}
-    matched, missing = [], []
-    for policy in policies:
-        key = policy.get("condition_key")
-        operator = str(policy.get("condition_operator", "EQ")).upper()
-        expected = policy.get("condition_value")
-        actual = subject.get(key) if key else None
-        ok = False
-        if actual is not None:
-            if operator in {"EQ", "="}:
-                ok = str(actual).lower() == str(expected).lower()
-            elif operator in {"GTE", ">="}:
-                ok = float(actual) >= float(expected)
-            elif operator in {"LTE", "<="}:
-                ok = float(actual) <= float(expected)
-            elif operator == "IN":
-                ok = str(actual) in {part.strip() for part in str(expected).split(",")}
-        if ok:
-            matched.append(policy)
-        else:
-            missing.append(str(key or "condition"))
-    materials = []
-    for policy in matched:
-        values = policy.get("required_materials") or []
-        materials.extend(values if isinstance(values, list) else [part.strip() for part in str(values).split(",") if part.strip()])
-    return {"status": "COMPLETED", "matched_policies": matched, "missing_conditions": sorted(set(missing)), "required_materials": sorted(set(materials))}
+    candidates = params.get("candidates") or []
+    if not isinstance(policies, list) or not isinstance(candidates, list):
+        raise ValueError("policies and candidates must be arrays")
+    return analyze_policy_matching(params, policies=policies, candidates=candidates, subject=params.get("subject"))
 
 
 def _verify_evidence(session: Session, params: dict[str, Any]) -> dict[str, Any]:
@@ -340,17 +319,27 @@ def _dispatch(session: Session, settings: Settings, user: UserContext, run_id: s
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "policy.query":
         conditions = ["deleted_at IS NULL"]
-        values: dict[str, Any] = {"limit": int(params.get("page_size", 50)), "offset": (int(params.get("page", 1)) - 1) * int(params.get("page_size", 50))}
+        page_size = int(params.get("page_size", 50))
+        values: dict[str, Any] = {"limit": page_size, "offset": (int(params.get("page", 1)) - 1) * page_size}
         if params.get("region_code"):
-            conditions.append("region_id IN (SELECT id FROM region WHERE region_code=:region_code)")
+            conditions.append("(region_id IS NULL OR region_id IN (SELECT id FROM region WHERE region_code=:region_code))")
             values["region_code"] = params["region_code"]
+        if params.get("subject_type"):
+            conditions.append("(applicant_type IS NULL OR applicant_type=:subject_type)")
+            values["subject_type"] = params["subject_type"]
+        if params.get("policy_type"):
+            conditions.append("policy_type=:policy_type")
+            values["policy_type"] = params["policy_type"]
+        if params.get("effective_date"):
+            conditions.append("(effective_from IS NULL OR effective_from<=:effective_date)")
+            values["effective_date"] = params["effective_date"]
         if params.get("data_version"):
             conditions.append("data_version=:data_version")
             values["data_version"] = params["data_version"]
         where = " AND ".join(conditions)
         total = int(session.execute(text(f"SELECT COUNT(*) FROM policy_condition WHERE {where}"), values).scalar_one())
         rows = session.execute(text(f"""SELECT id, policy_code, policy_version, title, policy_type,
-            applicant_type, condition_key, condition_operator, condition_value, required_materials,
+            region_id, applicant_type, condition_key, condition_operator, condition_value, required_materials,
             effective_from, effective_to, application_deadline, source_type, source_url, source_file,
             data_version, import_batch_id FROM policy_condition WHERE {where}
             ORDER BY effective_from DESC, id DESC LIMIT :limit OFFSET :offset"""), values).mappings().all()
