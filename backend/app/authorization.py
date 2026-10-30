@@ -96,19 +96,19 @@ ROLE_PERMISSION_CODES: dict[str, frozenset[str]] = {
     }),
     "SITE_PLANNER": frozenset(_COMMON_READ | {
         "menu.agent.coverage", "menu.agent.competition", "menu.agent.site_selection", "candidate.write",
-        "tool.coverage.analyze", "tool.competition.analyze", "tool.site.score", "tool.result.write", "agent.run.start",
+        "tool.coverage.analyze", "tool.competition.analyze", "tool.site.score", "tool.result.write", "agent.run.start", "report.confirm",
     }),
     "OPS_LEAD": frozenset(_COMMON_READ | {
         "menu.agent.coverage", "menu.agent.competition", "menu.agent.expansion", "candidate.write",
         "expansion.write", "import.read", "import.write", "dataset.user_upload.write", "dataset.synthetic.write",
         "tool.coverage.analyze", "tool.competition.analyze", "tool.expansion.plan", "tool.result.write",
         "fault.write",
-        "confirmation.data.overwrite", "confirmation.expansion.publish", "agent.run.start",
+        "confirmation.data.overwrite", "confirmation.expansion.publish", "agent.run.start", "report.confirm",
     }),
     "POLICY_ADMIN": frozenset(_COMMON_READ | {
         "menu.agent.policy", "menu.rag", "menu.imports", "policy.write", "rag.read", "rag.write",
         "rag.document.delete", "rag.vector.rebuild", "tool.policy.match", "tool.rag.rebuild", "tool.result.write",
-        "confirmation.document.delete", "confirmation.vector.rebuild", "agent.run.start",
+        "confirmation.document.delete", "confirmation.vector.rebuild", "agent.run.start", "report.confirm",
     }),
     "AUDITOR": frozenset(_COMMON_READ | {"menu.audit", "audit.read", "rag.read", "import.read"}),
 }

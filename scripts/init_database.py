@@ -107,6 +107,9 @@ def ensure_compatibility_columns(cursor) -> None:
         ensure_column(cursor, "expansion_plan", "external_case_id", "VARCHAR(128) NULL AFTER id")
         if not index_exists(cursor, "expansion_plan", "uq_expansion_case_version"):
             cursor.execute("CREATE UNIQUE INDEX uq_expansion_case_version ON expansion_plan (external_case_id, data_version)")
+    if table_exists(cursor, "agent_report"):
+        ensure_column(cursor, "agent_report", "data_batch_ids", "JSON NULL AFTER data_version")
+        ensure_column(cursor, "agent_report", "document_versions", "JSON NULL AFTER data_batch_ids")
     if table_exists(cursor, "rag_document"):
         for column, definition in {
             "chunk_count": "INT UNSIGNED NOT NULL DEFAULT 0",
@@ -303,6 +306,45 @@ def ensure_workflow_tables(cursor) -> None:
             CONSTRAINT fk_agent_event_actor FOREIGN KEY (actor_user_id) REFERENCES users (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
     )
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS agent_report (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            report_id CHAR(36) NOT NULL,
+            run_id CHAR(36) NOT NULL,
+            report_type VARCHAR(64) NOT NULL,
+            title VARCHAR(500) NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+            conclusion TEXT NULL,
+            input_snapshot JSON NULL,
+            calculation_summary JSON NULL,
+            business_data JSON NULL,
+            rag_evidence JSON NULL,
+            data_version VARCHAR(64) NULL,
+            data_batch_ids JSON NULL,
+            document_versions JSON NULL,
+            prompt_version VARCHAR(64) NULL,
+            model_version VARCHAR(255) NULL,
+            embedding_model VARCHAR(255) NULL,
+            calculation_rule_version VARCHAR(64) NULL,
+            confirmation_type VARCHAR(64) NULL,
+            confirmed_by BIGINT UNSIGNED NULL,
+            confirmed_at DATETIME NULL,
+            confirmation_comment VARCHAR(2000) NULL,
+            rejection_reason VARCHAR(2000) NULL,
+            archived_at DATETIME NULL,
+            created_by BIGINT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_agent_report_id (report_id),
+            UNIQUE KEY uq_agent_report_run (run_id),
+            KEY ix_agent_report_type_status (report_type, status),
+            KEY ix_agent_report_created (created_at),
+            CONSTRAINT fk_agent_report_run FOREIGN KEY (run_id) REFERENCES agent_run (run_id),
+            CONSTRAINT fk_agent_report_creator FOREIGN KEY (created_by) REFERENCES users (id),
+            CONSTRAINT fk_agent_report_confirmed_by FOREIGN KEY (confirmed_by) REFERENCES users (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
+    )
 
 
 def main() -> int:
@@ -366,9 +408,15 @@ def main() -> int:
                     "INSERT INTO schema_migration(version,checksum,applied_at,description) VALUES (%s,%s,%s,%s)",
                     ("008_coverage_gap_boundary", hashlib.sha256(b"coverage_gap_region_boundary_compatibility").hexdigest(), datetime.now(UTC).replace(tzinfo=None), "Step 21 coverage gap region boundary compatibility columns"),
                 )
+            cursor.execute("SELECT COUNT(*) FROM schema_migration WHERE version=%s", ("009_agent_reports",))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO schema_migration(version,checksum,applied_at,description) VALUES (%s,%s,%s,%s)",
+                    ("009_agent_reports", hashlib.sha256(b"agent_report_decision_reports_and_confirmations").hexdigest(), datetime.now(UTC).replace(tzinfo=None), "Step 26 decision report, confirmation and export model"),
+                )
             cursor.execute("SHOW TABLES")
             tables = [row[0] for row in cursor.fetchall()]
-        print({"database": env.get("MYSQL_DSN", "").split("@")[-1], "table_count": len(tables), "migrations": ["001_target_model", "002_auth_data_scope", "003_rag_document_sections", "004_rag_chunk_batches", "005_rag_embedding_batches", "006_rag_search_log", "007_agent_state_contracts", "008_coverage_gap_boundary"], "workflow_tables": ["schema_migration", "import_row_error", "user_data_scope", "rag_document_section", "rag_chunk_batch", "rag_embedding_batch", "rag_embedding_item", "rag_search_log", "agent_run_event"]})
+        print({"database": env.get("MYSQL_DSN", "").split("@")[-1], "table_count": len(tables), "migrations": ["001_target_model", "002_auth_data_scope", "003_rag_document_sections", "004_rag_chunk_batches", "005_rag_embedding_batches", "006_rag_search_log", "007_agent_state_contracts", "008_coverage_gap_boundary", "009_agent_reports"], "workflow_tables": ["schema_migration", "import_row_error", "user_data_scope", "rag_document_section", "rag_chunk_batch", "rag_embedding_batch", "rag_embedding_item", "rag_search_log", "agent_run_event", "agent_report"]})
     finally:
         connection.close()
     return 0

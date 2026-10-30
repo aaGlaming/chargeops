@@ -48,6 +48,7 @@
 | `rag_embedding_item` | 批次内 Chunk 的向量化状态 | Chunk、Chroma ID、状态、尝试次数、向量维度和失败原因 |
 | `rag_search_log` | RAG 检索运行记录 | 查询、改写查询、Agent 场景、过滤条件、召回/命中数量、Chunk ID、状态和运行 ID |
 | `agent_run_event` | Agent 模型调用和人工确认事件 | 运行 ID、事件序号、事件类型、模型/确认信息、输入/输出摘要、错误、重试和耗时 |
+| `agent_report` | 决策报告、确认状态和导出数据 | 报告/运行 ID、报告类型、状态、结论、计算结果、MySQL 数据、RAG 证据、版本、确认人和确认意见 |
 | `audit_log` | 不可变审计事件 | 操作人、动作、资源、请求/Trace/运行/批次 ID、前后状态、严重级别、发生时间；不设置更新字段 |
 
 ## 关系与索引原则

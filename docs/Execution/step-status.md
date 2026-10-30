@@ -289,3 +289,14 @@
 - 已区分 `PASS`、`PARTIAL`、`FAIL` 和 `UNKNOWN`，输出缺失字段、缺少材料、政策版本和截止日期。
 - 已接入政策资格/材料/补贴 RAG 检索、证据校验和 `analysis.result.write` 结果保存。
 - 详细记录见 `step25-policy-matching-agent.md`。
+
+## Step 26：实现决策报告和人工确认
+
+**状态：完成。**
+
+- 已新增 `agent_report` 报告模型和 009 数据库兼容迁移，关联运行、数据版本、模型版本、规则版本和证据。
+- 已实现报告草稿、待确认、已批准、已拒绝和已归档状态。
+- 已实现统一报告详情，展示结论、计算结果、MySQL 业务数据和 RAG 原文证据。
+- 已实现扩容、补贴匹配和高等级选址报告的人工确认、拒绝原因和审计记录。
+- 已实现 Markdown 和 JSON 报告导出。
+- 详细记录见 `step26-decision-reports-confirmation.md`。
