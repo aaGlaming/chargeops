@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, shallowRef, watch } from 'vue'
+import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
 import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
 import { Download, DocumentChecked, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { useAuth } from '../stores/auth'
 import { useNotifications } from '../composables/useNotifications'
+import { createImportBatch, listImportBatches, rollbackImportBatch } from '../api/imports'
+import { getApiError } from '../api/http'
 
 type DatasetKey = 'stations' | 'connectors' | 'metrics' | 'faults' | 'candidates' | 'expansion'
 type FieldKind = 'text' | 'number' | 'date' | 'datetime'
@@ -39,7 +41,7 @@ interface ImportBatch {
   dataset: string
   fileName: string
   createdAt: string
-  status: 'IMPORTED' | 'PARTIAL' | 'ROLLED_BACK'
+  status: 'PENDING' | 'IMPORTED' | 'PARTIAL' | 'FAILED' | 'ROLLED_BACK'
   rollbackStatus: 'NOT_REQUESTED' | 'ROLLED_BACK'
   rowCount: number
   successCount: number
@@ -144,6 +146,7 @@ const blockingErrorCount = computed(() => validationErrors.value.filter((item) =
 const warningCount = computed(() => validationErrors.value.filter((item) => item.level === 'warning').length)
 const previewRows = computed(() => rows.value.slice(0, 8))
 const canConfirm = computed(() => Boolean(file.value && rows.value.length && mappedCount.value >= requiredCount.value && blockingErrorCount.value === 0 && !importing.value))
+const canImport = computed(() => auth.hasPermission('import.write'))
 
 function clearMapping() {
   Object.keys(mapping).forEach((key) => delete mapping[key])
@@ -285,29 +288,29 @@ async function confirmImport() {
   }
   importing.value = true
   progress.value = 8
-  for (const value of [28, 54, 76, 92, 100]) {
-    await new Promise((resolve) => window.setTimeout(resolve, 180))
-    progress.value = value
+  try {
+    const responsePromise = createImportBatch({ dataset_type: selectedDataset.value, file_name: file.value?.name || 'upload', data_version: findDataVersion(), mapping: { ...mapping }, rows: rows.value })
+    for (const value of [28, 54, 76, 92]) {
+      await new Promise((resolve) => window.setTimeout(resolve, 100))
+      progress.value = value
+    }
+    const response = await responsePromise
+    progress.value = 100
+    const batch = fromApiBatch(response)
+    batches.value = [batch, ...batches.value.filter((item) => item.id !== batch.id)]
+    activeStep.value = 4
+    window.dispatchEvent(new CustomEvent('chargeops:data-imported', { detail: batch }))
+    notify(batch.status === 'PARTIAL' ? '批次已登记，但仍有失败行，请下载失败记录。' : '数据已完成导入，站点、列表、Agent 和驾驶舱可以读取最新批次。', { title: '导入完成', type: batch.status === 'PARTIAL' ? 'warning' : 'success', duration: 5000 })
+  } catch (error) {
+    const detail = getApiError(error)
+    ElMessage.error(detail.traceId ? `${detail.message}（trace_id: ${detail.traceId}）` : detail.message)
+  } finally {
+    importing.value = false
   }
-  const now = new Date()
-  const batch: ImportBatch = {
-    id: `UP-${now.getTime()}`,
-    dataset: selectedConfig.value.label,
-    fileName: file.value?.name || 'upload',
-    createdAt: now.toLocaleString('zh-CN', { hour12: false }),
-    status: warningCount.value ? 'PARTIAL' : 'IMPORTED',
-    rollbackStatus: 'NOT_REQUESTED',
-    rowCount: rows.value.length,
-    successCount: rows.value.length - blockingErrorCount.value,
-    failedCount: blockingErrorCount.value,
-    skippedCount: 0,
-    dataVersion: findDataVersion(),
-  }
-  batches.value = [batch, ...batches.value]
-  importing.value = false
-  activeStep.value = 4
-  window.dispatchEvent(new CustomEvent('chargeops:data-imported', { detail: batch }))
-  notify('数据已完成导入登记，站点、列表、Agent 和驾驶舱将在下次查询时刷新。', { title: '导入完成', type: 'success', duration: 5000 })
+}
+
+function fromApiBatch(batch: { id: number; dataset_type: string; source_file?: string | null; data_version: string; status: ImportBatch['status']; rollback_status: ImportBatch['rollbackStatus']; row_count: number; success_count: number; failed_count: number; skipped_count: number; created_at: string }): ImportBatch {
+  return { id: String(batch.id), dataset: DATASETS[batch.dataset_type as DatasetKey]?.label || batch.dataset_type, fileName: batch.source_file || 'upload', createdAt: new Date(batch.created_at).toLocaleString('zh-CN', { hour12: false }), status: batch.status, rollbackStatus: batch.rollback_status, rowCount: batch.row_count, successCount: batch.success_count, failedCount: batch.failed_count, skippedCount: batch.skipped_count, dataVersion: batch.data_version }
 }
 
 function findDataVersion() {
@@ -323,6 +326,7 @@ function openBatch(batch: ImportBatch) {
 async function rollbackBatch(batch: ImportBatch) {
   try {
     await ElMessageBox.confirm(`确认回滚批次 ${batch.id}？该操作会移除本批次关联数据。`, '回滚导入批次', { type: 'warning', confirmButtonText: '确认回滚', cancelButtonText: '取消' })
+    if (/^\d+$/.test(batch.id)) await rollbackImportBatch(Number(batch.id))
     batch.status = 'ROLLED_BACK'
     batch.rollbackStatus = 'ROLLED_BACK'
     notify(`批次 ${batch.id} 已标记为回滚。`, { title: '回滚完成', type: 'success' })
@@ -338,12 +342,22 @@ function refreshDownstream() {
 
 watch(selectedDataset, resetFileState)
 watch(() => JSON.stringify(mapping), validateRows)
+
+onMounted(async () => {
+  if (!canImport.value) return
+  try {
+    const response = await listImportBatches()
+    batches.value = response.items.map(fromApiBatch)
+  } catch {
+    // Empty batch history is a valid first-use state; the next upload will show API errors explicitly.
+  }
+})
 </script>
 
 <template>
   <section class="import-page">
-    <div v-if="!auth.hasPermission('menu.imports')" class="permission-state">
-      <el-result icon="warning" title="没有数据导入权限" sub-title="请联系系统管理员申请 menu.imports 权限。" />
+    <div v-if="!canImport" class="permission-state">
+      <el-result icon="warning" title="没有数据导入权限" sub-title="请联系系统管理员申请 import.write 权限。" />
     </div>
     <template v-else>
       <div class="import-toolbar">
