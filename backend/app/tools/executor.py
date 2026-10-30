@@ -8,7 +8,6 @@ to a deterministic implementation and persists a bounded execution trace.
 from __future__ import annotations
 
 import json
-import math
 import time
 from datetime import date, datetime, timezone
 from typing import Any
@@ -21,6 +20,7 @@ from app.agents.registry import get_tool_contract
 from app.agents.coverage_gap import analyze_coverage_gap
 from app.agents.competition import analyze_competition
 from app.agents.site_selection import analyze_site_selection
+from app.agents.expansion import analyze_expansion
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import ToolExecuteResponse
@@ -174,22 +174,12 @@ def _site_score(params: dict[str, Any]) -> dict[str, Any]:
 
 def _expansion(params: dict[str, Any]) -> dict[str, Any]:
     stations = params.get("stations") or params.get("metrics") or []
-    if not isinstance(stations, list):
-        raise ValueError("stations must be an array")
-    plans = []
-    budget = float(params.get("budget_usd") or 0)
-    for item in stations:
-        occupancy = float(item.get("peak_occupancy_rate", item.get("occupancy_rate", 0)) or 0)
-        faults = int(item.get("fault_count_30d", item.get("fault_count", 0)) or 0)
-        available = float(item.get("available_capacity_kw", 0) or 0)
-        proposed_fast = max(0, math.ceil((occupancy - 0.75) * 10) + (1 if faults >= 3 else 0))
-        if available and available < proposed_fast * 60:
-            proposed_fast = max(0, math.floor(available / 60))
-        priority = "HIGH" if occupancy >= 0.9 or faults >= 5 else "MEDIUM" if occupancy >= 0.75 else "LOW"
-        plans.append({"station_id": item.get("station_id", item.get("id")), "existing_fast_connectors": item.get("existing_fast_connectors"), "proposed_fast_connectors": proposed_fast, "proposed_slow_connectors": 0, "peak_occupancy_rate": occupancy, "fault_count_30d": faults, "available_capacity_kw": available, "priority": priority, "estimated_budget_usd": round(proposed_fast * 25000, 2), "preconditions": ["capacity_review"] if proposed_fast else [], "risk_summary": ["low_capacity"] if available and available < proposed_fast * 60 else []})
-    if budget:
-        plans.sort(key=lambda item: (item["priority"] != "HIGH", item["priority"] != "MEDIUM"))
-    return {"status": "WAITING_CONFIRMATION", "confirmation_status": "PENDING", "plans": plans, "budget_usd": budget, "risk_summary": ["方案发布前需要人工确认"]}
+    connectors = params.get("connectors") or []
+    metrics = params.get("metrics") or []
+    faults = params.get("faults") or []
+    if not all(isinstance(value, list) for value in (stations, connectors, metrics, faults)):
+        raise ValueError("stations, connectors, metrics and faults must be arrays")
+    return analyze_expansion(params, stations=stations, connectors=connectors, metrics=metrics, faults=faults)
 
 
 def _policy_match(params: dict[str, Any]) -> dict[str, Any]:
@@ -330,6 +320,19 @@ def _dispatch(session: Session, settings: Settings, user: UserContext, run_id: s
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "fault.query":
         query = FaultQuery.model_validate(params)
+        if query.all_pages:
+            collected: list[dict[str, Any]] = []
+            total = 0
+            page = 1
+            while len(collected) < query.max_rows:
+                current = query.model_copy(update={"page": page, "all_pages": False})
+                batch, total = list_faults(session, current)
+                collected.extend(batch)
+                if not batch or page * current.page_size >= total:
+                    break
+                page += 1
+            collected = collected[: query.max_rows]
+            return {"items": _json_value(collected), "page": {"page": 1, "page_size": len(collected), "total": total, "has_next": len(collected) < total}}
         items, total = list_faults(session, query)
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "candidate.query":
@@ -417,40 +420,45 @@ def _write_score(session: Session, run_id: str, params: dict[str, Any], run: Any
 
 
 def _write_expansion(session: Session, run_id: str, params: dict[str, Any], run: Any, idempotency_key: str) -> dict[str, Any]:
-    station_id = params.get("station_id")
-    if not station_id:
-        plans = params.get("plans") or []
-        station_id = plans[0].get("station_id") if plans and isinstance(plans[0], dict) else None
-    if not station_id:
-        raise ValueError("station_id or plans[0].station_id is required")
+    plans = params.get("plans") or []
+    if not isinstance(plans, list) or not plans:
+        plan = params.get("plan")
+        plans = [plan] if isinstance(plan, dict) else []
+    if not plans:
+        raise ValueError("plans must contain at least one expansion plan")
     # The imported charging_station table predates soft-delete support, so it
     # intentionally has no deleted_at column.
-    exists = session.execute(text("SELECT COUNT(*) FROM charging_station WHERE id=:id"), {"id": station_id}).scalar_one()
-    if not exists:
-        raise ValueError("station_id does not exist")
-    plan = params.get("plan") or (params.get("plans") or [{}])[0]
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     data_version = params.get("data_version") or run["data_version"] or date.today().isoformat()
-    external_case_id = params.get("external_case_id") or f"{run_id}:{idempotency_key}"
-    session.execute(text("""INSERT INTO expansion_plan
-        (external_case_id, station_id, run_id, existing_fast_connectors, existing_slow_connectors,
-         peak_occupancy_rate, fault_count_30d, available_capacity_kw, proposed_fast_connectors,
-         proposed_slow_connectors, requested_budget_usd, priority, preconditions, risk_summary, evidence,
-         confirmation_status, source_type, data_version, created_at, updated_at)
-        VALUES (:external_case_id, :station_id, :run_id, :existing_fast_connectors, :existing_slow_connectors,
-         :peak_occupancy_rate, :fault_count_30d, :available_capacity_kw, :proposed_fast_connectors,
-         :proposed_slow_connectors, :requested_budget_usd, :priority, :preconditions, :risk_summary, :evidence,
-         'WAITING_CONFIRMATION', 'agent', :data_version, :created_at, :updated_at)"""), {
-        "external_case_id": external_case_id, "station_id": station_id, "run_id": run_id,
-        "existing_fast_connectors": plan.get("existing_fast_connectors"), "existing_slow_connectors": plan.get("existing_slow_connectors"),
-        "peak_occupancy_rate": plan.get("peak_occupancy_rate"), "fault_count_30d": plan.get("fault_count_30d"), "available_capacity_kw": plan.get("available_capacity_kw"),
-        "proposed_fast_connectors": plan.get("proposed_fast_connectors", 0), "proposed_slow_connectors": plan.get("proposed_slow_connectors", 0), "requested_budget_usd": plan.get("requested_budget_usd", params.get("budget_usd")),
-        "priority": plan.get("priority", "MEDIUM"), "preconditions": json.dumps(plan.get("preconditions", []), ensure_ascii=False, default=str), "risk_summary": json.dumps(plan.get("risk_summary", []), ensure_ascii=False, default=str), "evidence": json.dumps(plan.get("evidence", params.get("evidence", [])), ensure_ascii=False, default=str),
-        "data_version": data_version, "created_at": now, "updated_at": now,
-    })
-    plan_id = int(session.execute(text("SELECT LAST_INSERT_ID()")).scalar_one())
+    saved: list[dict[str, Any]] = []
+    for plan in plans:
+        if not isinstance(plan, dict) or not plan.get("station_id"):
+            raise ValueError("each expansion plan requires station_id")
+        station_id = int(plan["station_id"])
+        exists = session.execute(text("SELECT COUNT(*) FROM charging_station WHERE id=:id"), {"id": station_id}).scalar_one()
+        if not exists:
+            raise ValueError("station_id does not exist")
+        external_case_id = params.get("external_case_id") or f"{run_id}:expansion:{station_id}"
+        session.execute(text("""INSERT INTO expansion_plan
+            (external_case_id, station_id, run_id, existing_fast_connectors, existing_slow_connectors,
+             peak_occupancy_rate, fault_count_30d, available_capacity_kw, proposed_fast_connectors,
+             proposed_slow_connectors, requested_budget_usd, priority, preconditions, risk_summary, evidence,
+             confirmation_status, source_type, data_version, created_at, updated_at)
+            VALUES (:external_case_id, :station_id, :run_id, :existing_fast_connectors, :existing_slow_connectors,
+             :peak_occupancy_rate, :fault_count_30d, :available_capacity_kw, :proposed_fast_connectors,
+             :proposed_slow_connectors, :requested_budget_usd, :priority, :preconditions, :risk_summary, :evidence,
+             'WAITING_CONFIRMATION', 'agent', :data_version, :created_at, :updated_at)"""), {
+            "external_case_id": external_case_id, "station_id": station_id, "run_id": run_id,
+            "existing_fast_connectors": plan.get("existing_fast_connectors"), "existing_slow_connectors": plan.get("existing_slow_connectors"),
+            "peak_occupancy_rate": plan.get("peak_occupancy_rate"), "fault_count_30d": plan.get("fault_count_30d"), "available_capacity_kw": plan.get("available_capacity_kw"),
+            "proposed_fast_connectors": plan.get("proposed_fast_connectors", 0), "proposed_slow_connectors": plan.get("proposed_slow_connectors", 0), "requested_budget_usd": plan.get("requested_budget_usd", params.get("budget_usd")),
+            "priority": plan.get("priority", "MEDIUM"), "preconditions": json.dumps(plan.get("preconditions", []), ensure_ascii=False, default=str), "risk_summary": json.dumps(plan.get("risk_summary", []), ensure_ascii=False, default=str), "evidence": json.dumps(plan.get("evidence", params.get("evidence", [])), ensure_ascii=False, default=str),
+            "data_version": data_version, "created_at": now, "updated_at": now,
+        })
+        plan_id = int(session.execute(text("SELECT LAST_INSERT_ID()" )).scalar_one())
+        saved.append({"expansion_plan_id": plan_id, "station_id": station_id})
     session.commit()
-    return {"expansion_plan_id": plan_id, "station_id": int(station_id), "run_id": run_id, "status": "WAITING_CONFIRMATION", "confirmation_status": "WAITING_CONFIRMATION", "data_version": data_version}
+    return {"plans": saved, "run_id": run_id, "status": "WAITING_CONFIRMATION", "confirmation_status": "WAITING_CONFIRMATION", "data_version": data_version}
 
 
 def execute_tool(session: Session, settings: Settings, user: UserContext, run_id: str, tool_name: str, params: dict[str, Any], idempotency_key: str | None = None) -> ToolExecuteResponse:

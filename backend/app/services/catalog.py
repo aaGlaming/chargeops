@@ -215,6 +215,13 @@ def _station_conditions(query: StationQuery, sc: TableColumns, params: dict[str,
     status = _col("s", sc, "station_status", _col("s", sc, "status_code", "NULL"))
     access = _col("s", sc, "access_type", _col("s", sc, "access_code", "NULL"))
     charging = _col("s", sc, "charging_types", _col("s", sc, "ev_connector_types", "NULL"))
+    if query.station_ids:
+        placeholders = []
+        for index, station_id in enumerate(query.station_ids):
+            key = f"station_id_{index}"
+            placeholders.append(f":{key}")
+            params[key] = station_id
+        conditions.append(f"s.id IN ({', '.join(placeholders)})")
     for value, expression, key in ((query.station_status, status, "station_status"), (query.access_type, access, "access_type")):
         if value:
             conditions.append(f"UPPER({expression})=UPPER(:{key})")

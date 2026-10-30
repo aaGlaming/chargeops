@@ -128,6 +128,7 @@ class MapPointResponse(BaseModel):
 
 
 class StationQuery(BaseModel):
+    station_ids: list[int] | None = Field(default=None, min_length=1, max_length=50000)
     region_code: str | None = None
     operator_id: int | None = Field(default=None, ge=1)
     station_status: str | None = None

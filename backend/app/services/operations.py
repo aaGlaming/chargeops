@@ -90,6 +90,13 @@ def list_faults(session: Session, query: FaultQuery) -> tuple[list[dict[str, Any
         if value is not None:
             conditions.append(expression)
             params[key] = value
+    if query.station_ids:
+        placeholders = []
+        for index, station_id in enumerate(query.station_ids):
+            key = f"station_id_{index}"
+            placeholders.append(f":{key}")
+            params[key] = station_id
+        conditions.append(f"f.station_id IN ({', '.join(placeholders)})")
     if query.started_from:
         conditions.append("f.started_at>=:started_from")
         params["started_from"] = query.started_from

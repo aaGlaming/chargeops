@@ -97,10 +97,20 @@ class SiteSelectionInput(AgentInputBase):
 
 
 class ExpansionInput(AgentInputBase):
+    prompt_version: str = Field(default="expansion-v1", max_length=64)
     station_ids: list[int] = Field(min_length=1, max_length=100)
+    analysis_date: date | None = None
     start_date: date | None = None
     end_date: date | None = None
     budget_usd: float | None = Field(default=None, ge=0)
+    occupancy_target: float = Field(default=0.75, ge=0, le=1)
+    high_occupancy_threshold: float = Field(default=0.9, ge=0, le=1)
+    fault_window_days: int = Field(default=30, ge=1, le=3650)
+    fast_connector_power_kw: float = Field(default=60, gt=0, le=1000)
+    fast_connector_cost_usd: float = Field(default=25000, ge=0, le=1000000)
+    slow_connector_cost_usd: float = Field(default=5000, ge=0, le=1000000)
+    stale_after_days: int = Field(default=90, ge=1, le=3650)
+    min_data_confidence: float = Field(default=0.6, ge=0, le=1)
 
 
 class PolicyMatchingInput(AgentInputBase):
@@ -158,6 +168,10 @@ class ExpansionOutput(AgentOutputBase):
     plans: list[dict[str, Any]] = Field(default_factory=list)
     confirmation_status: ConfirmationStatus = "NOT_REQUIRED"
     risk_summary: list[str] = Field(default_factory=list)
+    scoring_rule_version: str | None = None
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    data_confidence_score: float | None = None
+    missing_data: list[str] = Field(default_factory=list)
 
 
 class PolicyMatchingOutput(AgentOutputBase):

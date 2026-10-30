@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import langchain
@@ -19,6 +19,7 @@ from app.agents.contracts import AgentError, AgentEvidence, AgentGraphState, Con
 from app.agents.coverage_gap import COVERAGE_GAP_SYSTEM_PROMPT
 from app.agents.competition import COMPETITION_SYSTEM_PROMPT
 from app.agents.site_selection import SITE_SELECTION_SYSTEM_PROMPT
+from app.agents.expansion import EXPANSION_SYSTEM_PROMPT
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import SupervisorExecuteRequest
@@ -311,12 +312,16 @@ class Supervisor:
         if agent_type == "site_selection":
             return [("candidate.query", {**base, "candidate_ids": payload.get("candidate_site_ids", []), "page": 1, "page_size": 100}, True)]
         if agent_type == "expansion":
+            end_date = payload.get("end_date") or payload.get("analysis_date") or date.today().isoformat()
             start_date = payload.get("start_date")
-            end_date = payload.get("end_date")
+            if not start_date:
+                end = date.fromisoformat(str(end_date)[:10])
+                start_date = (end - timedelta(days=max(1, int(payload.get("fault_window_days", 30))) - 1)).isoformat()
+            station_ids = payload.get("station_ids", [])
             return [
-                ("station.query", {**base, "page": 1, "page_size": 200}, True),
-                ("operation.query", {**base, "start_date": start_date, "end_date": end_date, "page": 1, "page_size": 500}, False),
-                ("fault.query", {**base, "page": 1, "page_size": 500, "started_from": f"{start_date}T00:00:00" if start_date else None, "started_to": f"{end_date}T23:59:59" if end_date else None}, False),
+                ("station.query", {**base, "station_ids": station_ids, "all_pages": True, "max_rows": 100, "page": 1, "page_size": 200}, True),
+                ("operation.query", {**base, "station_ids": station_ids, "start_date": start_date, "end_date": end_date, "all_pages": True, "max_rows": 100000, "page": 1, "page_size": 500}, False),
+                ("fault.query", {**base, "station_ids": station_ids, "all_pages": True, "max_rows": 100000, "page": 1, "page_size": 500, "started_from": f"{start_date}T00:00:00" if start_date else None, "started_to": f"{end_date}T23:59:59" if end_date else None}, False),
             ]
         if agent_type == "policy_matching":
             return [("policy.query", {**base, "region_code": payload.get("region_code"), "page": 1, "page_size": 100}, True)]
@@ -425,6 +430,17 @@ class Supervisor:
             else:
                 state.setdefault("tool_results", {})["station.query"] = {"items": [], "page": {"total": 0}}
                 self._persist(state)
+        if state.get("agent_type") == "expansion":
+            station_items = state.get("tool_results", {}).get("station.query", {}).get("items", [])
+            station_ids = [int(item["id"]) for item in station_items if item.get("id") is not None]
+            connector_result = self._tool(
+                state,
+                "connector.query",
+                {**(state.get("data_version") and {"data_version": state.get("data_version")} or {}), "station_ids": station_ids, "page": 1, "page_size": 500, "all_pages": True, "max_rows": 100000},
+                required=False,
+            )
+            if connector_result is None:
+                return state
         state["current_stage"] = "RETRIEVE_EVIDENCE"
         self._persist(state)
         return state
@@ -524,7 +540,13 @@ class Supervisor:
             }
         if agent_type == "expansion":
             items = results.get("station.query", {}).get("items", [])
-            return "expansion.plan", {"stations": items, "budget_usd": payload.get("budget_usd")}
+            return "expansion.plan", {
+                **payload,
+                "stations": items,
+                "connectors": results.get("connector.query", {}).get("items", []),
+                "metrics": results.get("operation.query", {}).get("items", []),
+                "faults": results.get("fault.query", {}).get("items", []),
+            }
         policies = results.get("policy.query", {}).get("items", [])
         subject = {
             "region_code": payload.get("region_code"),
@@ -540,7 +562,7 @@ class Supervisor:
         if result is None:
             return state
         state.setdefault("calculation_results", {})[tool_name] = result
-        if result.get("status") != "COMPLETED":
+        if result.get("status") not in {"COMPLETED", "WAITING_CONFIRMATION"}:
             reason = result.get("stop_reason") or result.get("status") or "MISSING_BUSINESS_DATA"
             labels = {
                 "coverage_gap": "覆盖缺口分析",
@@ -582,7 +604,11 @@ class Supervisor:
                 f"数据可信度 {selected.get('data_confidence_score', 0):.2f}。"
             )
         if agent_type == "expansion":
-            return f"已生成 {len(result.get('plans', []))} 个扩容方案，发布前需要人工确认。"
+            metrics = result.get("metrics", {})
+            return (
+                f"已生成 {len(result.get('plans', []))} 个扩容方案，新增快充 {metrics.get('total_proposed_fast_connectors', 0)} 个，"
+                f"估算预算 {metrics.get('total_estimated_budget_usd', 0):.2f}，数据可信度 {result.get('data_confidence_score', 0):.2f}，发布前需要人工确认。"
+            )
         return f"已匹配 {len(result.get('matched_policies', []))} 条政策，缺失条件 {len(result.get('missing_conditions', []))} 项。"
 
     def _explain(self, state: AgentGraphState) -> AgentGraphState:
@@ -609,6 +635,7 @@ class Supervisor:
                         COVERAGE_GAP_SYSTEM_PROMPT if state.get("agent_type") == "coverage_gap"
                         else COMPETITION_SYSTEM_PROMPT if state.get("agent_type") == "competition"
                         else SITE_SELECTION_SYSTEM_PROMPT if state.get("agent_type") == "site_selection"
+                        else EXPANSION_SYSTEM_PROMPT if state.get("agent_type") == "expansion"
                         else "supervisor-rule-v1"
                     ),
                 },
@@ -647,8 +674,12 @@ class Supervisor:
         conclusion = state.get("conclusion") or {}
         version = state.get("data_version")
         if agent_type == "expansion":
-            plan = (calc.get("plans") or [{}])[0]
-            params = {"station_id": plan.get("station_id"), "plan": plan, "data_version": version, "evidence": state.get("evidence", [])}
+            params = {
+                "plans": calc.get("plans") or [],
+                "data_version": version,
+                "evidence": state.get("evidence", []),
+                "scoring_rule_version": calc.get("scoring_rule_version", "expansion-plan-v1"),
+            }
             result = self._tool(state, "expansion.result.write", params, required=True, idempotency_key=f"{self.context.run_id}:expansion")
         elif agent_type == "site_selection":
             selected = (calc.get("ranked_candidates") or [{}])[0]
