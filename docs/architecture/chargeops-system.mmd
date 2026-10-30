@@ -1,0 +1,25 @@
+flowchart LR
+    Browser[Vue 3 + Element Plus + ECharts] -->|HTTP / JSON| API[FastAPI]
+    API --> Auth[JWT + RBAC + data scope]
+    API --> MySQL[(MySQL 8.4\n业务、Agent、审计、RAG 元数据)]
+    API --> Chroma[(Chroma\n向量索引)]
+    API --> RAG[Markdown 清洗 / Chunk / 原文片段]
+    API --> Supervisor[Supervisor + LangGraph]
+    Supervisor --> Tools[工具契约执行层]
+    Tools --> MySQL
+    Tools --> RAG
+    Tools --> Chroma
+    Tools --> Rules[确定性业务计算]
+    API -.-> Embedding[OpenAI-compatible Embedding]
+    API -.-> Chat[可选 Chat / Rerank]
+
+    subgraph Inputs[输入与版本化数据]
+      AFDC[AFDC 公开站点快照]
+      Upload[用户模板 CSV]
+      Policy[政策与运营 Markdown]
+      Synthetic[合成演示数据]
+    end
+    AFDC --> MySQL
+    Upload --> MySQL
+    Policy --> RAG
+    Synthetic --> MySQL

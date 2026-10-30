@@ -454,3 +454,13 @@
 - 已从恢复目录启动临时 Chroma 实例，验证 heartbeat、collection 和索引可读取。
 - 已通过恢复后的 API 重新执行 RAG 检索和候选选址 Agent，结果分别为命中和 `COMPLETED`。
 - 详细记录见 `step39-backup-restore.md` 和 `evals/step39/reports/latest.json`。
+
+## Step 40：整理文档和完成交付
+
+**状态：完成。**
+
+- 已更新 README、完整交付说明、需求实现矩阵、系统架构图和数据字典，并集中记录 Windows/Docker 启动、数据导入、RAG 索引、备份恢复和已知限制。
+- 已整理五个 Agent 的职责、工具、输出、权限、评测结果和人工确认边界；补充 API、前端路由、角色、审计、日志、监控和环境变量说明。
+- 已记录公开数据来源、下载版本、字段映射、数据质量、RAG 文档、Chunk/Embedding/Chroma 参数和 Step 34–39 验收结果。
+- 已完成仓库交付扫描：未发现被 Git 跟踪的 `.env`、密钥、备份目录、恢复目录、日志运行产物或真实上传文件。
+- 交付文件入口见 [`docs/delivery/chargeops-delivery.md`](../delivery/chargeops-delivery.md)，可复现命令和最终 Git 标签记录在该文档及 README 中。

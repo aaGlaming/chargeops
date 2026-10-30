@@ -1,11 +1,81 @@
 # ChargeOps 充电站选址与扩容决策平台
 
-ChargeOps 是一个面向充电网络运营商、园区和商业地产公司的充电设施选址与扩容决策平台。
+ChargeOps 面向充电网络运营商、园区和商业地产团队，提供公开站点数据、运营业务数据、政策知识库和五个业务 Agent 的可追溯决策支持。系统由 FastAPI、MySQL、Chroma 和 Vue 组成，支持站点覆盖分析、竞争分析、候选选址、站点扩容和政策匹配。
 
-系统将公开充电站数据、候选站点数据、区域指标和充电建设知识库结合起来，通过 5 个业务 Agent 生成区域覆盖分析、竞争分析、候选地址评分、扩容建议和政策匹配结果，并在前端提供可追溯的 RAG 证据。
+## 交付状态
 
-详细需求见：
+Step 5–40 已完成。Step 40 的完整交付说明、启动命令、数据版本、评测结果、限制和交接事项见 [`docs/delivery/chargeops-delivery.md`](docs/delivery/chargeops-delivery.md)。需求与代码实现映射见 [`docs/delivery/requirements-implementation-matrix.md`](docs/delivery/requirements-implementation-matrix.md)。
 
-- `D:/LEARN/AI/programs/AgentTask/需求分析/V3/ChargeOps-充电站选址与扩容决策平台-需求文档.md`
+## 快速启动
 
-项目基础环境已完成，Step 5 已登记 AFDC 加州公开站点快照，Step 6 已准备上传模板和合成演示数据，Step 7 已完成公开数据清洗和统一映射，Step 8 已完成 MySQL 数据模型设计，Step 9 已完成数据库初始化、导入和回滚，Step 10 已完成 FastAPI 应用基础层，Step 11 已完成认证、角色和权限，Step 12 已完成区域、运营商、站点和连接器模块，Step 13 已完成运营指标、故障和候选站点模块，Step 14 已完成 RAG 文档上传和 Markdown 解析，Step 15 已完成文本清洗和 Chunk 预览，Step 16 已完成 Embedding 和 Chroma 入库，Step 17 已完成 RAG 检索和原文片段展示，Step 18 已完成 Agent 状态和工具契约设计，Step 19 已完成 Agent 工具执行层，Step 20 已完成 Supervisor 和 LangGraph 循环控制，Step 21 已完成覆盖缺口 Agent，Step 22 已完成竞争分析 Agent，Step 23 已完成候选选址 Agent，Step 24 已完成站点扩容 Agent，Step 25 已完成政策与补贴匹配 Agent，Step 26 已完成决策报告和人工确认，Step 27 已完成 Vue 应用壳和路由菜单，Step 28 已完成前端业务数据导入，Step 29 已完成站点、区域和候选站点前端页面，Step 30 已完成前端 5 个 Agent 页面，Step 31 已完成前端 RAG 全链路页面，Step 32 已完成 ECharts 业务驾驶舱，Step 33 已完成日志、审计和运行监控，Step 34 已完成评测数据集和确定性基线，Step 35 已完成 RAG 评测，Step 36 已完成 Agent 评测和安全验证，Step 37 已完成端到端业务验收，Step 38 已完成 Windows 部署验收和 Docker 部署配置，Step 39 已完成备份和恢复验证。执行进度见 `docs/Execution/step-status.md`。
+### Windows 本地
+
+```powershell
+Copy-Item .env.example .env
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/init_database.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/import_sample_data.ps1 -Dataset all
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/index_rag_documents.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_windows.ps1
+```
+
+默认地址：API `http://127.0.0.1:8000`，Swagger `http://127.0.0.1:8000/docs`，前端 `http://127.0.0.1:5173`。运行参数和端口冲突处理见 [`scripts/start_windows.ps1`](scripts/start_windows.ps1)。
+
+### Docker Compose
+
+```powershell
+Copy-Item .env.example .env
+# 先在 .env 中替换生产密钥和密码
+docker compose up -d --build
+docker compose ps
+```
+
+Docker 运行要求、健康检查和未完成的主机前置条件见 [`docs/Execution/step38-deployment-acceptance.md`](docs/Execution/step38-deployment-acceptance.md)。
+
+## 仓库结构
+
+| 目录 | 内容 |
+|---|---|
+| `backend/` | FastAPI 路由、服务、权限、RAG、Agent 和监控 |
+| `frontend/` | Vue 3、Pinia、Vue Router、ECharts 页面 |
+| `infra/` | MySQL schema、迁移、Compose 和 Nginx |
+| `data/` | 原始/清洗公开数据、模板、合成数据和 manifest |
+| `rag_docs/` | 可追溯的 Markdown 政策和业务知识 |
+| `scripts/` | 初始化、导入、索引、评测、部署、备份和恢复脚本 |
+| `docs/` | 执行状态、架构、数据字典、部署和交付文档 |
+| `evals/` | Step 34–39 的数据集、报告和验收证据 |
+
+## 五个业务 Agent
+
+- 覆盖缺口：计算区域覆盖率、缺口类型和时间窗口。
+- 竞争分析：分析周边站点、运营商集中度和服务缺口。
+- 候选选址：按需求、竞争、容量、距离和政策条件输出候选评分。
+- 站点扩容：结合利用率、故障和连接器类型提出扩容计划，需人工确认。
+- 政策匹配：按区域、主体和项目规模匹配政策、资格和材料缺口。
+
+每次运行都会保留状态、工具调用、MySQL 证据、RAG 原文片段、停止原因和审计记录。
+
+## 评测结果
+
+- 确定性基线：15/15 通过。
+- RAG：10/10 查询通过，Recall@K、Hit Rate@K、MRR、来源正确率和片段可定位率均为 1.0。
+- Agent 安全验证：65/65 通过。
+- 端到端业务验收：133/133 通过。
+- Windows/Docker 部署检查：41/41 可执行检查通过；主机未安装 Docker CLI，容器运行项标记为 skipped。
+- 备份恢复：SHA-256 59/59，MySQL 31 表，Chroma collection 1，RAG 命中 3，Agent 状态 `COMPLETED`。
+
+## 重要文档
+
+- [完整交付说明](docs/delivery/chargeops-delivery.md)
+- [需求实现矩阵](docs/delivery/requirements-implementation-matrix.md)
+- [执行状态](docs/Execution/step-status.md)
+- [系统架构图](docs/architecture/chargeops-system.mmd)
+- [MySQL 数据字典](docs/data-dictionary.md)
+- [执行手册](docs/chargeops.md)
+- [部署验收](docs/Execution/step38-deployment-acceptance.md)
+- [备份恢复验收](docs/Execution/step39-backup-restore.md)
+
+## 安全和数据约束
+
+不要提交 `.env`、API Key、生产密码、备份/恢复目录、日志运行产物或真实用户上传文件。重新下载公开数据时，应保留下载日期、原始 hash、清洗 manifest、导入批次和 RAG 版本，以便复现和回滚。
+
+最终交付标签：`v0.1.0-step40`。
