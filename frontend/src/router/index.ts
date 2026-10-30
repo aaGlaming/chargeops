@@ -6,6 +6,7 @@ import {
   Histogram,
   House,
   Location,
+  MapLocation,
   Notebook,
   Operation,
   Setting,
@@ -52,15 +53,21 @@ const router = createRouter({
       meta: { title: '数据导入', subtitle: '业务数据上传、校验与批次管理', icon: UploadFilled, requiresAuth: true, permission: 'menu.imports' },
     },
     {
+      path: '/regions',
+      name: 'regions',
+      component: () => import('../views/RegionsView.vue'),
+      meta: { title: '区域分析', subtitle: '区域站点密度、连接器与覆盖摘要', icon: MapLocation, requiresAuth: true, permission: 'station.read' },
+    },
+    {
       path: '/stations',
       name: 'stations',
-      component: () => import('../views/WorkspaceView.vue'),
+      component: () => import('../views/StationsView.vue'),
       meta: { title: '站点', subtitle: '充电站与连接器目录', icon: Location, requiresAuth: true, permission: 'station.read' },
     },
     {
       path: '/candidates',
       name: 'candidates',
-      component: () => import('../views/WorkspaceView.vue'),
+      component: () => import('../views/CandidatesView.vue'),
       meta: { title: '候选站点', subtitle: '候选站点生命周期与评分', icon: Aim, requiresAuth: true, permission: 'candidate.read' },
     },
     {
