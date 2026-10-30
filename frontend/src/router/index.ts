@@ -21,6 +21,7 @@ declare module 'vue-router' {
     title: string
     subtitle?: string
     icon?: unknown
+    agentType?: 'coverage_gap' | 'competition' | 'site_selection' | 'expansion' | 'policy_matching'
     requiresAuth?: boolean
     permission?: string
   }
@@ -73,32 +74,32 @@ const router = createRouter({
     {
       path: '/agents/coverage',
       name: 'coverage-agent',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: '覆盖缺口', subtitle: '区域充电覆盖与缺口分析', icon: DataAnalysis, requiresAuth: true, permission: 'menu.agent.coverage' },
+      component: () => import('../views/AgentWorkspaceView.vue'),
+      meta: { title: '覆盖缺口', subtitle: '区域充电覆盖与缺口分析', icon: DataAnalysis, agentType: 'coverage_gap', requiresAuth: true, permission: 'menu.agent.coverage' },
     },
     {
       path: '/agents/competition',
       name: 'competition-agent',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: '竞争分析', subtitle: '周边运营商与竞争格局', icon: TrendCharts, requiresAuth: true, permission: 'menu.agent.competition' },
+      component: () => import('../views/AgentWorkspaceView.vue'),
+      meta: { title: '竞争分析', subtitle: '周边运营商与竞争格局', icon: TrendCharts, agentType: 'competition', requiresAuth: true, permission: 'menu.agent.competition' },
     },
     {
       path: '/agents/site-selection',
       name: 'site-selection-agent',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: '候选选址', subtitle: '候选站点评分与推荐', icon: Histogram, requiresAuth: true, permission: 'menu.agent.site_selection' },
+      component: () => import('../views/AgentWorkspaceView.vue'),
+      meta: { title: '候选选址', subtitle: '候选站点评分与推荐', icon: Histogram, agentType: 'site_selection', requiresAuth: true, permission: 'menu.agent.site_selection' },
     },
     {
       path: '/agents/expansion',
       name: 'expansion-agent',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: '站点扩容', subtitle: '容量、利用率与扩容方案', icon: Operation, requiresAuth: true, permission: 'menu.agent.expansion' },
+      component: () => import('../views/AgentWorkspaceView.vue'),
+      meta: { title: '站点扩容', subtitle: '容量、利用率与扩容方案', icon: Operation, agentType: 'expansion', requiresAuth: true, permission: 'menu.agent.expansion' },
     },
     {
       path: '/agents/policy',
       name: 'policy-agent',
-      component: () => import('../views/WorkspaceView.vue'),
-      meta: { title: '政策匹配', subtitle: '政策资格与补贴材料匹配', icon: Tickets, requiresAuth: true, permission: 'menu.agent.policy' },
+      component: () => import('../views/AgentWorkspaceView.vue'),
+      meta: { title: '政策匹配', subtitle: '政策资格与补贴材料匹配', icon: Tickets, agentType: 'policy_matching', requiresAuth: true, permission: 'menu.agent.policy' },
     },
     {
       path: '/rag',
