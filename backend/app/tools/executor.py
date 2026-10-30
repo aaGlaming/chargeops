@@ -313,6 +313,23 @@ def _dispatch(session: Session, settings: Settings, user: UserContext, run_id: s
     if tool_name == "candidate.query":
         items, total = list_candidates(session, region_code=params.get("region_code"), lifecycle_status=params.get("lifecycle_status"), data_status=params.get("data_status"), source_type=params.get("source_type"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
         return {"items": _json_value(items), "page": _page(items, total, params)}
+    if tool_name == "policy.query":
+        conditions = ["deleted_at IS NULL"]
+        values: dict[str, Any] = {"limit": int(params.get("page_size", 50)), "offset": (int(params.get("page", 1)) - 1) * int(params.get("page_size", 50))}
+        if params.get("region_code"):
+            conditions.append("region_id IN (SELECT id FROM region WHERE region_code=:region_code)")
+            values["region_code"] = params["region_code"]
+        if params.get("data_version"):
+            conditions.append("data_version=:data_version")
+            values["data_version"] = params["data_version"]
+        where = " AND ".join(conditions)
+        total = int(session.execute(text(f"SELECT COUNT(*) FROM policy_condition WHERE {where}"), values).scalar_one())
+        rows = session.execute(text(f"""SELECT id, policy_code, policy_version, title, policy_type,
+            applicant_type, condition_key, condition_operator, condition_value, required_materials,
+            effective_from, effective_to, application_deadline, source_type, source_url, source_file,
+            data_version, import_batch_id FROM policy_condition WHERE {where}
+            ORDER BY effective_from DESC, id DESC LIMIT :limit OFFSET :offset"""), values).mappings().all()
+        return {"items": _json_value([dict(row) for row in rows]), "page": _page(list(rows), total, params)}
     if tool_name == "rag.search":
         request = RagSearchRequest.model_validate(params)
         return _json_value(search_rag(session, settings, user, request).model_dump(mode="json"))
@@ -384,7 +401,9 @@ def _write_expansion(session: Session, run_id: str, params: dict[str, Any], run:
         station_id = plans[0].get("station_id") if plans and isinstance(plans[0], dict) else None
     if not station_id:
         raise ValueError("station_id or plans[0].station_id is required")
-    exists = session.execute(text("SELECT COUNT(*) FROM charging_station WHERE id=:id AND deleted_at IS NULL"), {"id": station_id}).scalar_one()
+    # The imported charging_station table predates soft-delete support, so it
+    # intentionally has no deleted_at column.
+    exists = session.execute(text("SELECT COUNT(*) FROM charging_station WHERE id=:id"), {"id": station_id}).scalar_one()
     if not exists:
         raise ValueError("station_id does not exist")
     plan = params.get("plan") or (params.get("plans") or [{}])[0]

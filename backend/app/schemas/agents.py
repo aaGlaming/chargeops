@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -110,3 +110,15 @@ class ToolExecuteResponse(BaseModel):
     result: dict[str, Any] = Field(default_factory=dict)
     error: dict[str, Any] | None = None
     duration_ms: int | None = None
+
+
+class SupervisorExecuteRequest(BaseModel):
+    max_model_calls: int = Field(default=3, ge=1, le=20)
+    max_tool_calls: int = Field(default=20, ge=1, le=100)
+    max_loop_iterations: int = Field(default=8, ge=1, le=50)
+    max_duration_seconds: float = Field(default=120, gt=0, le=900)
+
+
+class AgentConfirmationRequest(BaseModel):
+    decision: Literal["APPROVE", "REJECT"]
+    comment: str = Field(min_length=1, max_length=2000)

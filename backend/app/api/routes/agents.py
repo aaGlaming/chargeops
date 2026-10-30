@@ -8,9 +8,10 @@ from app.api.routes.auth import get_current_user
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.errors import AppError
-from app.schemas.agents import AgentContractListResponse, AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunTransitionRequest, ToolExecuteRequest, ToolExecuteResponse
+from app.schemas.agents import AgentConfirmationRequest, AgentContractListResponse, AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunTransitionRequest, SupervisorExecuteRequest, ToolExecuteRequest, ToolExecuteResponse
 from app.services.agent_runs import create_agent_run, get_agent_run, list_agent_runs, transition_agent_run
 from app.services.auth import UserContext, require_permission
+from app.agents.supervisor import cancel_agent_run, confirm_agent_run, retry_agent_run, run_supervisor
 from app.tools.executor import execute_tool
 
 
@@ -80,3 +81,47 @@ def execute_agent_tool(run_id: str, tool_name: str, request: ToolExecuteRequest,
     if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
         raise AppError("FORBIDDEN", "无权执行该 Agent 运行的工具", status_code=403)
     return execute_tool(session, settings, user, run_id, tool_name, request.params, request.idempotency_key)
+
+
+@router.post("/agent-runs/{run_id}/execute", response_model=AgentRunDetail, summary="Run the Supervisor loop")
+def execute_agent_run(run_id: str, request: SupervisorExecuteRequest | None = None, settings: Settings = Depends(get_settings), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权执行该 Agent 运行", status_code=403)
+    return run_supervisor(session, settings, user, run_id, request)
+
+
+@router.post("/agent-runs/{run_id}/confirmation", response_model=AgentRunDetail, summary="Approve or reject a waiting Agent result")
+def confirm_agent_run_endpoint(run_id: str, request: AgentConfirmationRequest, settings: Settings = Depends(get_settings), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权确认该 Agent 运行", status_code=403)
+    return confirm_agent_run(session, settings, user, run_id, decision=request.decision, comment=request.comment)
+
+
+@router.post("/agent-runs/{run_id}/retry", response_model=AgentRunDetail, summary="Retry a failed or blocked Agent run")
+def retry_agent_run_endpoint(run_id: str, request: SupervisorExecuteRequest | None = None, settings: Settings = Depends(get_settings), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权重试该 Agent 运行", status_code=403)
+    return retry_agent_run(session, settings, user, run_id, request)
+
+
+@router.post("/agent-runs/{run_id}/cancel", response_model=AgentRunDetail, summary="Cancel an Agent run")
+def cancel_agent_run_endpoint(run_id: str, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权取消该 Agent 运行", status_code=403)
+    return cancel_agent_run(session, user, run_id)

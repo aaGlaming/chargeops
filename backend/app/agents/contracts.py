@@ -151,6 +151,10 @@ class AgentGraphState(TypedDict, total=False):
     stop_reason: StopReason | None
     status: AgentStatus
     current_stage: str
+    resume_stage: str | None
+    retry_counts: dict[str, int]
+    progress_signature: str | None
+    no_progress_streak: int
     confirmation_status: ConfirmationStatus
     iteration: int
     tool_call_count: int
@@ -176,6 +180,10 @@ class AgentStateSnapshot(BaseModel):
     stop_reason: StopReason | None = None
     status: AgentStatus = "PENDING"
     current_stage: str = "CREATED"
+    resume_stage: str | None = None
+    retry_counts: dict[str, int] = Field(default_factory=dict)
+    progress_signature: str | None = None
+    no_progress_streak: int = 0
     confirmation_status: ConfirmationStatus = "NOT_REQUIRED"
     iteration: int = 0
     tool_call_count: int = 0
