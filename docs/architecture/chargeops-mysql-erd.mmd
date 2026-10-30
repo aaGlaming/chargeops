@@ -1,0 +1,165 @@
+erDiagram
+    USERS ||--o{ USER_ROLE : has
+    ROLES ||--o{ USER_ROLE : grants
+    ROLES ||--o{ ROLE_PERMISSION : contains
+    PERMISSIONS ||--o{ ROLE_PERMISSION : grants
+    USERS ||--o{ IMPORT_BATCH : creates
+    IMPORT_BATCH ||--o{ REGION : loads
+    IMPORT_BATCH ||--o{ OPERATOR : loads
+    IMPORT_BATCH ||--o{ CHARGING_STATION : loads
+    IMPORT_BATCH ||--o{ CHARGING_CONNECTOR : loads
+    IMPORT_BATCH ||--o{ CANDIDATE_SITE : loads
+    IMPORT_BATCH ||--o{ POLICY_CONDITION : loads
+    IMPORT_BATCH ||--o{ RAG_DOCUMENT : loads
+    REGION ||--o{ REGION : contains
+    REGION ||--o{ CHARGING_STATION : contains
+    REGION ||--o{ CANDIDATE_SITE : contains
+    REGION ||--o{ POLICY_CONDITION : applies
+    OPERATOR ||--o{ CHARGING_STATION : operates
+    CHARGING_STATION ||--o{ CHARGING_CONNECTOR : has
+    CHARGING_STATION ||--o{ STATION_OPERATION_METRIC : measures
+    CHARGING_STATION ||--o{ STATION_FAULT_EVENT : reports
+    CHARGING_STATION ||--o{ EXPANSION_PLAN : expands
+    CANDIDATE_SITE ||--o{ SITE_SCORE : scores
+    USERS ||--o{ CANDIDATE_SITE : creates
+    USERS ||--o{ AGENT_RUN : requests
+    AGENT_RUN ||--o{ TOOL_CALL : invokes
+    AGENT_RUN ||--o{ SITE_SCORE : produces
+    AGENT_RUN ||--o{ EXPANSION_PLAN : produces
+    RAG_DOCUMENT ||--o{ RAG_CHUNK : contains
+    USERS ||--o{ RAG_DOCUMENT : uploads
+    USERS ||--o{ AUDIT_LOG : acts
+    AGENT_RUN ||--o{ AUDIT_LOG : audits
+
+    USERS {
+      bigint id PK
+      varchar username UK
+      varchar status
+    }
+    ROLES {
+      bigint id PK
+      varchar role_code UK
+    }
+    PERMISSIONS {
+      bigint id PK
+      varchar permission_code UK
+    }
+    IMPORT_BATCH {
+      bigint id PK
+      varchar batch_key UK
+      varchar source_type
+      varchar data_version
+      varchar status
+    }
+    REGION {
+      bigint id PK
+      varchar region_code
+      bigint parent_region_id FK
+      json boundary_geojson
+    }
+    OPERATOR {
+      bigint id PK
+      varchar operator_name
+      varchar data_version
+    }
+    CHARGING_STATION {
+      bigint id PK
+      bigint external_station_id
+      varchar external_station_key
+      bigint region_id FK
+      bigint operator_id FK
+      decimal latitude
+      decimal longitude
+      varchar station_status
+      varchar source_type
+    }
+    CHARGING_CONNECTOR {
+      bigint id PK
+      varchar external_case_id
+      bigint station_id FK
+      varchar connector_type
+      int quantity
+      decimal power_kw
+    }
+    STATION_OPERATION_METRIC {
+      bigint id PK
+      bigint station_id FK
+      date metric_date
+      tinyint metric_hour
+      decimal occupancy_rate
+    }
+    STATION_FAULT_EVENT {
+      bigint id PK
+      bigint station_id FK
+      varchar fault_type
+      varchar severity
+      datetime started_at
+    }
+    CANDIDATE_SITE {
+      bigint id PK
+      varchar external_candidate_id
+      bigint region_id FK
+      decimal budget_usd
+      varchar lifecycle_status
+    }
+    POLICY_CONDITION {
+      bigint id PK
+      varchar policy_code
+      varchar policy_version
+      bigint region_id FK
+      date application_deadline
+    }
+    SITE_SCORE {
+      bigint id PK
+      bigint candidate_site_id FK
+      char run_id FK
+      decimal total_score
+      varchar recommendation_grade
+    }
+    EXPANSION_PLAN {
+      bigint id PK
+      bigint station_id FK
+      char run_id FK
+      varchar priority
+      varchar confirmation_status
+    }
+    AGENT_RUN {
+      char run_id PK
+      varchar agent_type
+      bigint requested_by FK
+      varchar status
+      varchar stop_reason
+    }
+    TOOL_CALL {
+      bigint id PK
+      char run_id FK
+      varchar tool_name
+      varchar status
+    }
+    RAG_DOCUMENT {
+      bigint id PK
+      varchar document_key UK
+      varchar doc_type
+      varchar vector_status
+    }
+    RAG_CHUNK {
+      bigint id PK
+      bigint document_id FK
+      varchar chunk_key UK
+      varchar chroma_id
+    }
+    AUDIT_LOG {
+      bigint id PK
+      bigint actor_user_id FK
+      varchar action
+      datetime occurred_at
+    }
+
+    USER_ROLE {
+      bigint user_id FK
+      bigint role_id FK
+    }
+    ROLE_PERMISSION {
+      bigint role_id FK
+      bigint permission_id FK
+    }

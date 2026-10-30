@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+
+from app.agents.registry import TOOL_CONTRACTS, contracts_for_agent, get_tool_contract
+from app.api.routes.auth import get_current_user
+from app.db import get_db
+from app.errors import AppError
+from app.schemas.agents import AgentContractListResponse, AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunTransitionRequest
+from app.services.agent_runs import create_agent_run, get_agent_run, list_agent_runs, transition_agent_run
+from app.services.auth import UserContext, require_permission
+
+
+router = APIRouter(tags=["agents"])
+
+
+@router.get("/agents/contracts", response_model=AgentContractListResponse, summary="List registered Agent tool contracts")
+def agent_contracts(agent_type: str | None = Query(default=None), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentContractListResponse:
+    require_permission(user, "agent.run.read", session=session)
+    if agent_type:
+        if agent_type not in {"coverage_gap", "competition", "site_selection", "expansion", "policy_matching"}:
+            raise AppError("AGENT_TYPE_UNSUPPORTED", "不支持的 Agent 类型", status_code=400)
+        return AgentContractListResponse(items=contracts_for_agent(agent_type))  # type: ignore[arg-type]
+    return AgentContractListResponse(items=list(TOOL_CONTRACTS))
+
+
+@router.get("/agents/contracts/{tool_name}", response_model=dict, summary="Get one Agent tool contract")
+def agent_contract(tool_name: str, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> dict[str, object]:
+    require_permission(user, "agent.run.read", session=session)
+    contract = get_tool_contract(tool_name)
+    if contract is None:
+        raise AppError("AGENT_TOOL_NOT_FOUND", "Agent 工具契约不存在", status_code=404, details={"tool_name": tool_name})
+    return contract.model_dump(mode="json")
+
+
+@router.post("/agent-runs", response_model=AgentRunDetail, status_code=201, summary="Create an Agent run state")
+def create_run(request: AgentRunCreateRequest, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    return create_agent_run(session, user, request)
+
+
+@router.get("/agent-runs", response_model=AgentRunListResponse, summary="List Agent runs")
+def agent_runs(agent_type: str | None = Query(default=None), user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunListResponse:
+    require_permission(user, "agent.run.read", session=session)
+    requested_by = None if {"SYSTEM_ADMIN", "AUDITOR"} & set(user.role_codes) else user.user_id
+    return list_agent_runs(session, requested_by=requested_by, agent_type=agent_type)
+
+
+@router.get("/agent-runs/{run_id}", response_model=AgentRunDetail, summary="Get Agent run state and trace")
+def agent_run_detail(run_id: str, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.read", session=session)
+    result = get_agent_run(session, run_id)
+    if result is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if result.requested_by != user.user_id and not ({"SYSTEM_ADMIN", "AUDITOR"} & set(user.role_codes)):
+        raise AppError("FORBIDDEN", "无权查看该 Agent 运行", status_code=403)
+    return result
+
+
+@router.post("/agent-runs/{run_id}/transition", response_model=AgentRunDetail, summary="Transition Agent run state")
+def transition_run(run_id: str, request: AgentRunTransitionRequest, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db)) -> AgentRunDetail:
+    require_permission(user, "agent.run.start", session=session)
+    existing = get_agent_run(session, run_id)
+    if existing is None:
+        raise AppError("AGENT_RUN_NOT_FOUND", "Agent 运行不存在", status_code=404, details={"run_id": run_id})
+    if existing.requested_by != user.user_id and "SYSTEM_ADMIN" not in user.role_codes:
+        raise AppError("FORBIDDEN", "无权更新该 Agent 运行", status_code=403)
+    return transition_agent_run(session, user, run_id, status=request.status, current_stage=request.current_stage, stop_reason=request.stop_reason, confirmation_status=request.confirmation_status, state_patch=request.state_patch)
