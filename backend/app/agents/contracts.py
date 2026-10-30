@@ -86,9 +86,14 @@ class CompetitionInput(AgentInputBase):
 
 
 class SiteSelectionInput(AgentInputBase):
+    prompt_version: str = Field(default="site-selection-v1", max_length=64)
     candidate_site_ids: list[int] = Field(min_length=1, max_length=100)
     weights: dict[str, float] = Field(default_factory=dict)
     target_score: float = Field(default=70, ge=0, le=100)
+    scoring_rule_version: str = Field(default="site-selection-score-v1", max_length=64)
+    nearby_radius_km: float = Field(default=5.0, gt=0, le=100)
+    stale_after_days: int = Field(default=90, ge=1, le=3650)
+    min_data_confidence: float = Field(default=0.6, ge=0, le=1)
 
 
 class ExpansionInput(AgentInputBase):
@@ -143,6 +148,10 @@ class SiteSelectionOutput(AgentOutputBase):
     ranked_candidates: list[dict[str, Any]] = Field(default_factory=list)
     selected_candidate_id: int | None = None
     scoring_breakdown: dict[str, Any] = Field(default_factory=dict)
+    scoring_rule_version: str | None = None
+    weights: dict[str, float] = Field(default_factory=dict)
+    missing_data: list[str] = Field(default_factory=list)
+    recommendation_actions: list[str] = Field(default_factory=list)
 
 
 class ExpansionOutput(AgentOutputBase):

@@ -204,13 +204,20 @@ def _candidate_sql(session: Session) -> str:
         FROM candidate_site c LEFT JOIN region r ON r.id=c.region_id"""
 
 
-def list_candidates(session: Session, *, region_code: str | None, lifecycle_status: str | None, data_status: str | None, source_type: str | None, page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
+def list_candidates(session: Session, *, region_code: str | None, lifecycle_status: str | None, data_status: str | None, source_type: str | None, candidate_ids: list[int] | None = None, page: int, page_size: int) -> tuple[list[dict[str, Any]], int]:
     conditions = ["c.deleted_at IS NULL"]
     params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
     for value, expression, key in ((region_code, "r.region_code=:region_code", "region_code"), (lifecycle_status, "c.lifecycle_status=:lifecycle_status", "lifecycle_status"), (data_status, "c.data_status=:data_status", "data_status"), (source_type, "c.source_type=:source_type", "source_type")):
         if value:
             conditions.append(expression)
             params[key] = value
+    if candidate_ids:
+        placeholders = []
+        for index, candidate_id in enumerate(candidate_ids):
+            key = f"candidate_id_{index}"
+            placeholders.append(f":{key}")
+            params[key] = candidate_id
+        conditions.append(f"c.id IN ({', '.join(placeholders)})")
     where = " AND ".join(conditions)
     total = int(session.execute(text(f"SELECT COUNT(*) FROM candidate_site c LEFT JOIN region r ON r.id=c.region_id WHERE {where}"), params).scalar_one())
     rows = session.execute(text(f"{_candidate_sql(session)} WHERE {where} ORDER BY c.updated_at DESC, c.id DESC LIMIT :limit OFFSET :offset"), params).mappings().all()

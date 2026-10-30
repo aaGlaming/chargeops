@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.agents.registry import get_tool_contract
 from app.agents.coverage_gap import analyze_coverage_gap
 from app.agents.competition import analyze_competition
+from app.agents.site_selection import analyze_site_selection
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import ToolExecuteResponse
@@ -164,26 +165,11 @@ def _competition(params: dict[str, Any]) -> dict[str, Any]:
 
 def _site_score(params: dict[str, Any]) -> dict[str, Any]:
     candidates = params.get("candidates") or params.get("items") or []
-    if not isinstance(candidates, list) or not candidates:
-        raise ValueError("candidates must be a non-empty array")
-    weights = {"traffic": 0.3, "population": 0.2, "construction": 0.2, "competition": 0.15, "policy": 0.15}
-    supplied = params.get("weights") or {}
-    weights.update({key: float(value) for key, value in supplied.items() if key in weights})
-    total_weight = sum(weights.values()) or 1.0
-    weights = {key: value / total_weight for key, value in weights.items()}
-    max_traffic = max(float(item.get("traffic_index") or 0) for item in candidates) or 1.0
-    max_population = max(float(item.get("population_density") or 0) for item in candidates) or 1.0
-    ranked = []
-    for item in candidates:
-        traffic = min(100.0, float(item.get("traffic_index") or 0) / max_traffic * 100)
-        population = min(100.0, float(item.get("population_density") or 0) / max_population * 100)
-        construction = float(item.get("construction_score", item.get("electric_capacity_score", 50)) or 0)
-        competition = float(item.get("competition_score", 50) or 0)
-        policy = float(item.get("policy_score", 50) or 0)
-        total = round(traffic * weights["traffic"] + population * weights["population"] + construction * weights["construction"] + competition * weights["competition"] + policy * weights["policy"], 3)
-        ranked.append({"candidate_site_id": item.get("id", item.get("candidate_site_id")), "site_name": item.get("site_name"), "total_score": total, "traffic_score": round(traffic, 3), "population_score": round(population, 3), "construction_score": round(construction, 3), "competition_score": round(competition, 3), "policy_score": round(policy, 3), "recommendation_grade": "A" if total >= 80 else "B" if total >= 65 else "C"})
-    ranked.sort(key=lambda item: (-item["total_score"], str(item.get("candidate_site_id"))))
-    return {"status": "COMPLETED", "ranked_candidates": ranked, "selected_candidate_id": ranked[0].get("candidate_site_id"), "weights": weights}
+    stations = params.get("stations") or []
+    regions = params.get("regions") or []
+    if not isinstance(candidates, list) or not isinstance(stations, list) or not isinstance(regions, list):
+        raise ValueError("candidates, stations and regions must be arrays")
+    return analyze_site_selection(params, candidates=candidates, regions=regions, stations=stations)
 
 
 def _expansion(params: dict[str, Any]) -> dict[str, Any]:
@@ -347,7 +333,7 @@ def _dispatch(session: Session, settings: Settings, user: UserContext, run_id: s
         items, total = list_faults(session, query)
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "candidate.query":
-        items, total = list_candidates(session, region_code=params.get("region_code"), lifecycle_status=params.get("lifecycle_status"), data_status=params.get("data_status"), source_type=params.get("source_type"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
+        items, total = list_candidates(session, region_code=params.get("region_code"), lifecycle_status=params.get("lifecycle_status"), data_status=params.get("data_status"), source_type=params.get("source_type"), candidate_ids=params.get("candidate_ids"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "policy.query":
         conditions = ["deleted_at IS NULL"]

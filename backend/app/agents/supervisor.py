@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.agents.contracts import AgentError, AgentEvidence, AgentGraphState, ConfirmationRecord, ModelCallRecord
 from app.agents.coverage_gap import COVERAGE_GAP_SYSTEM_PROMPT
 from app.agents.competition import COMPETITION_SYSTEM_PROMPT
+from app.agents.site_selection import SITE_SELECTION_SYSTEM_PROMPT
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import SupervisorExecuteRequest
@@ -308,7 +309,7 @@ class Supervisor:
             }
             return [("station.query", station, True)]
         if agent_type == "site_selection":
-            return [("candidate.query", {**base, "page": 1, "page_size": 100}, True)]
+            return [("candidate.query", {**base, "candidate_ids": payload.get("candidate_site_ids", []), "page": 1, "page_size": 100}, True)]
         if agent_type == "expansion":
             start_date = payload.get("start_date")
             end_date = payload.get("end_date")
@@ -381,6 +382,49 @@ class Supervisor:
             )
             if connector_result is None:
                 return state
+        if state.get("agent_type") == "site_selection":
+            candidate_items = state.get("tool_results", {}).get("candidate.query", {}).get("items", [])
+            region_result = self._tool(
+                state,
+                "region.query",
+                {**(state.get("data_version") and {"data_version": state.get("data_version")} or {}), "page": 1, "page_size": 200},
+                required=False,
+            )
+            if region_result is None:
+                return state
+            points = [
+                (float(item["latitude"]), float(item["longitude"]))
+                for item in candidate_items
+                if item.get("latitude") is not None and item.get("longitude") is not None
+            ]
+            if points:
+                radius = float(state.get("user_input", {}).get("nearby_radius_km", 5.0))
+                lat_delta = radius / 111.0
+                min_lat = min(point[0] for point in points) - lat_delta
+                max_lat = max(point[0] for point in points) + lat_delta
+                min_lon = min(point[1] for point in points) - max(lat_delta, 0.1)
+                max_lon = max(point[1] for point in points) + max(lat_delta, 0.1)
+                station_result = self._tool(
+                    state,
+                    "station.query",
+                    {
+                        **(state.get("data_version") and {"data_version": state.get("data_version")} or {}),
+                        "min_latitude": max(-90.0, min_lat),
+                        "max_latitude": min(90.0, max_lat),
+                        "min_longitude": max(-180.0, min_lon),
+                        "max_longitude": min(180.0, max_lon),
+                        "page": 1,
+                        "page_size": 200,
+                        "all_pages": True,
+                        "max_rows": 50000,
+                    },
+                    required=False,
+                )
+                if station_result is None:
+                    return state
+            else:
+                state.setdefault("tool_results", {})["station.query"] = {"items": [], "page": {"total": 0}}
+                self._persist(state)
         state["current_stage"] = "RETRIEVE_EVIDENCE"
         self._persist(state)
         return state
@@ -471,7 +515,13 @@ class Supervisor:
             }
         if agent_type == "site_selection":
             items = results.get("candidate.query", {}).get("items", [])
-            return "site.score", {"candidates": items, "weights": payload.get("weights", {})}
+            return "site.score", {
+                **payload,
+                "candidates": items,
+                "regions": results.get("region.query", {}).get("items", []),
+                "stations": results.get("station.query", {}).get("items", []),
+                "weights": payload.get("weights", {}),
+            }
         if agent_type == "expansion":
             items = results.get("station.query", {}).get("items", [])
             return "expansion.plan", {"stations": items, "budget_usd": payload.get("budget_usd")}
@@ -524,7 +574,13 @@ class Supervisor:
                 f"运营商集中度 HHI {concentration.get('hhi', 0):.4f}，服务空白：{', '.join(result.get('service_gaps', [])) or '无'}。"
             )
         if agent_type == "site_selection":
-            return f"已完成候选站点评分，首选候选站点为 {result.get('selected_candidate_id')}。"
+            ranked = result.get("ranked_candidates", [])
+            selected = ranked[0] if ranked else {}
+            return (
+                f"已完成 {len(ranked)} 个候选站点评分，首选候选站点为 {result.get('selected_candidate_id')}，"
+                f"总分 {selected.get('total_score', 0):.2f}，等级 {selected.get('recommendation_grade', 'C')}，"
+                f"数据可信度 {selected.get('data_confidence_score', 0):.2f}。"
+            )
         if agent_type == "expansion":
             return f"已生成 {len(result.get('plans', []))} 个扩容方案，发布前需要人工确认。"
         return f"已匹配 {len(result.get('matched_policies', []))} 条政策，缺失条件 {len(result.get('missing_conditions', []))} 项。"
@@ -552,6 +608,7 @@ class Supervisor:
                     "system_prompt": (
                         COVERAGE_GAP_SYSTEM_PROMPT if state.get("agent_type") == "coverage_gap"
                         else COMPETITION_SYSTEM_PROMPT if state.get("agent_type") == "competition"
+                        else SITE_SELECTION_SYSTEM_PROMPT if state.get("agent_type") == "site_selection"
                         else "supervisor-rule-v1"
                     ),
                 },
@@ -595,7 +652,12 @@ class Supervisor:
             result = self._tool(state, "expansion.result.write", params, required=True, idempotency_key=f"{self.context.run_id}:expansion")
         elif agent_type == "site_selection":
             selected = (calc.get("ranked_candidates") or [{}])[0]
-            params = {"candidate_site_id": selected.get("candidate_site_id"), "result": {**selected, "status": "DRAFT", "evidence": state.get("evidence", [])}, "data_version": version}
+            params = {
+                "candidate_site_id": selected.get("candidate_site_id"),
+                "result": {**selected, "status": "DRAFT", "evidence": state.get("evidence", [])},
+                "scoring_rule_version": calc.get("scoring_rule_version") or calc.get("scoring_breakdown", {}).get("rule_version", "site-selection-score-v1"),
+                "data_version": version,
+            }
             result = self._tool(state, "score.result.write", params, required=True, idempotency_key=f"{self.context.run_id}:score")
         else:
             output = {**calc, "status": "COMPLETED", "conclusion": conclusion.get("conclusion"), "evidence": state.get("evidence", []), "data_version": version}
