@@ -1,0 +1,258 @@
+{
+  "suite": "chargeops-step38-deployment-acceptance",
+  "suite_version": "step38-2026-10-30",
+  "generated_at": "2026-10-30T05:22:44.536090-07:00",
+  "status": "PASS_WITH_LIMITATION",
+  "checks": {
+    "total": 41,
+    "passed": 41,
+    "failed": 0,
+    "skipped": 2
+  },
+  "failed_checks": [],
+  "skipped_checks": [
+    {
+      "name": "docker:compose-config",
+      "skipped": true,
+      "detail": "Docker CLI 未安装，已完成 compose 静态契约检查"
+    },
+    {
+      "name": "docker:runtime-up-build-restart-volume",
+      "skipped": true,
+      "detail": "Docker Desktop/CLI 不可用，未启动或修改容器"
+    }
+  ],
+  "all_checks": [
+    {
+      "name": "asset:compose.yaml",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:backend/Dockerfile",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:frontend/Dockerfile",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:frontend/nginx.conf",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:scripts/start_windows.ps1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:scripts/stop_windows.ps1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:scripts/init_database.ps1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:scripts/import_sample_data.ps1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "asset:scripts/index_rag_documents.ps1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:mysql:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:chroma:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:backend:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:frontend:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:healthcheck:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:mysql-data:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:chroma-data:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:rag-data:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:contains:logs-data:",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:backend-build-context-root",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:dependency-health-order",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "compose:restart-policy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:8000/health",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:8000/ready",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "api:ready:database-and-chroma",
+      "passed": true,
+      "detail": {
+        "mysql": "ok",
+        "chroma": "ok",
+        "llm": "ok"
+      }
+    },
+    {
+      "name": "api:ready:status-explicit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:8000/docs",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/healthz",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:healthz-or-vite-dev",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/dashboard",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/dashboard",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/agents/coverage",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/agents/coverage",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/agents/competition",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/agents/competition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/agents/site-selection",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/agents/site-selection",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/agents/expansion",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/agents/expansion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http:GET:http://127.0.0.1:5173/agents/policy",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "frontend:route:/agents/policy",
+      "passed": true,
+      "detail": null
+    }
+  ]
+}

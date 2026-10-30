@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from pathlib import Path
 from datetime import UTC, datetime
 
 from app.context import current_request_id, current_trace_id, current_user_id
@@ -42,9 +44,17 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging(level: str = "INFO") -> None:
-    handler = logging.StreamHandler()
-    handler.setFormatter(JsonFormatter())
+    formatter = JsonFormatter()
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    log_file = os.getenv("LOG_FILE", "").strip()
+    if log_file:
+        path = Path(log_file)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(path, encoding="utf-8"))
+    for handler in handlers:
+        handler.setFormatter(formatter)
     root = logging.getLogger()
     root.handlers.clear()
-    root.addHandler(handler)
+    for handler in handlers:
+        root.addHandler(handler)
     root.setLevel(getattr(logging, level.upper(), logging.INFO))

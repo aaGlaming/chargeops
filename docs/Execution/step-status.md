@@ -434,3 +434,13 @@
 - 本次验收共 133 项检查，133 项通过，0 项失败。
 - 已补充旧数据库字段兼容和 Chroma v2 非空 collection metadata 处理，并验证向量批次为 `COMPLETED`。
 - 详细记录见 `step37-e2e-acceptance.md` 和 `evals/step37/reports/latest.json`。
+
+## Step 38：完成 Windows 和 Docker 部署验收
+
+**状态：Windows 完成；Docker 配置完成，容器运行验收受主机环境限制。**
+
+- 已新增 Windows 启停、数据库初始化、示例数据导入和 RAG 索引 PowerShell 脚本。
+- 已补全四服务 Compose、后端和前端 Dockerfile、Nginx SPA 回退、健康检查、依赖顺序、重启策略和持久化卷。
+- 已验证 Windows 上 MySQL、Chroma、FastAPI 和 Vue 的顺序启动，以及数据库迁移、权限种子、合成数据导入和 RAG 索引。
+- 部署验收脚本 41 项静态和运行检查全部通过；Docker CLI 未安装，容器 up/build/restart/volume 项目记录为 skipped。
+- 详细记录见 `step38-deployment-acceptance.md` 和 `evals/step38/reports/latest.json`。
