@@ -223,7 +223,10 @@ def search_rag(session: Session, settings: Settings, user: UserContext, request:
     hits.sort(key=lambda item: (-item.score, item.chunk_id))
     hits = hits[: request.top_k]
     if not hits:
-        status = "NO_HIT"
+        # A no-hit retrieval is an evidence insufficiency outcome. Keeping
+        # this status explicit prevents downstream Agents from treating an
+        # empty result as support for a policy or operational conclusion.
+        status = "EVIDENCE_INSUFFICIENT"
     elif hits[0].score < 0.2:
         status = "EVIDENCE_INSUFFICIENT"
     else:

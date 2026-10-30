@@ -1,0 +1,396 @@
+{
+  "suite": "chargeops-step35-rag-evaluation",
+  "suite_version": "step35-v1",
+  "generated_at": "2026-10-30T11:08:19.783777+00:00",
+  "versions": {
+    "data_version": "eval-step35-2026-10-30",
+    "model": {
+      "provider": "offline-deterministic",
+      "chat_model": "fixture-no-model",
+      "temperature": 0,
+      "max_tokens": 0
+    },
+    "embedding": {
+      "provider": "offline-deterministic",
+      "model": "fixture-no-embedding",
+      "dimensions": 0,
+      "index_version": "fixture-index-v1"
+    },
+    "prompt_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-v1",
+      "expansion": "expansion-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "rule_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-score-v1",
+      "expansion": "expansion-plan-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "index_version": "fixture-index-v1"
+  },
+  "parameters": {
+    "top_k_values": [
+      3
+    ],
+    "chunk": {
+      "cleaning_version": "clean-v1",
+      "target_tokens": 80,
+      "overlap_tokens": 12
+    },
+    "retrieval": {
+      "tokenizer": "unicode-word-cjk-v1",
+      "score": "matched_terms / query_terms",
+      "no_hit_status": "EVIDENCE_INSUFFICIENT"
+    }
+  },
+  "fixture_sha256": {
+    "rag_eval.json": "cde1202468b5f9261efd32f830480cd13cc2d16cc102801ab5854b34883bd0ae",
+    "embedding_cases.json": "ec14333f3533ae3130c774a13ce2b12a881703ccdd422a3acda258aae7c7a47d"
+  },
+  "summary": {
+    "documents": 7,
+    "queries": 10,
+    "query_passed": 10,
+    "query_failed": 0,
+    "recall_at_k": 1.0,
+    "hit_rate_at_k": 1.0,
+    "mrr": 1.0,
+    "source_correctness": 1.0,
+    "fragment_locatability": 1.0,
+    "filter_checks_passed": 10,
+    "agent_type_checks_passed": 10,
+    "chunk_regeneration_passed": true,
+    "embedding_lifecycle_passed": true
+  },
+  "query_results": [
+    {
+      "query_id": "rag35_coverage_001",
+      "agent_scenario": "coverage_gap",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "coverage-guideline-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "coverage-guideline-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": null
+    },
+    {
+      "query_id": "rag35_competition_001",
+      "agent_scenario": "competition",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "competition-playbook-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "competition-playbook-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": null
+    },
+    {
+      "query_id": "rag35_site_selection_001",
+      "agent_scenario": "site_selection",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "site-selection-rubric-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "site-selection-rubric-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": null
+    },
+    {
+      "query_id": "rag35_expansion_001",
+      "agent_scenario": "expansion",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "expansion-safety-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "expansion-safety-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": null
+    },
+    {
+      "query_id": "rag35_policy_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "municipal-subsidy-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "municipal-subsidy-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": true
+    },
+    {
+      "query_id": "rag35_new_version_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [
+        "municipal-subsidy-ca-test-v1"
+      ],
+      "status": "HIT",
+      "expected_keys": [
+        "municipal-subsidy-ca-test-v1"
+      ],
+      "recall_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "mrr": 1.0,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": true
+    },
+    {
+      "query_id": "rag35_expired_blocked_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [],
+      "status": "EVIDENCE_INSUFFICIENT",
+      "expected_keys": [],
+      "recall_at_k": null,
+      "hit_rate_at_k": 1.0,
+      "mrr": null,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": false
+    },
+    {
+      "query_id": "rag35_wrong_type_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [],
+      "status": "EVIDENCE_INSUFFICIENT",
+      "expected_keys": [],
+      "recall_at_k": null,
+      "hit_rate_at_k": 1.0,
+      "mrr": null,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": false
+    },
+    {
+      "query_id": "rag35_wrong_region_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [],
+      "status": "EVIDENCE_INSUFFICIENT",
+      "expected_keys": [],
+      "recall_at_k": null,
+      "hit_rate_at_k": 1.0,
+      "mrr": null,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": false
+    },
+    {
+      "query_id": "rag35_no_hit_001",
+      "agent_scenario": "policy_matching",
+      "passed": true,
+      "failures": [],
+      "hit_keys": [],
+      "status": "EVIDENCE_INSUFFICIENT",
+      "expected_keys": [],
+      "recall_at_k": null,
+      "hit_rate_at_k": 1.0,
+      "mrr": null,
+      "source_correct": true,
+      "fragment_locatable": true,
+      "filter_ok": true,
+      "agent_type_ok": true,
+      "policy_conclusion_allowed": false
+    }
+  ],
+  "chunk_regeneration": {
+    "passed": true,
+    "failures": [],
+    "documents": [
+      {
+        "document_key": "coverage-guideline-ca-test-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "coverage-guideline-ca-test-v1/2026.1/chunk-0000-0bb94392a416"
+        ]
+      },
+      {
+        "document_key": "competition-playbook-ca-test-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "competition-playbook-ca-test-v1/2026.1/chunk-0000-c83c0fef1029"
+        ]
+      },
+      {
+        "document_key": "site-selection-rubric-ca-test-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "site-selection-rubric-ca-test-v1/2026.1/chunk-0000-53366fa48f44"
+        ]
+      },
+      {
+        "document_key": "expansion-safety-ca-test-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "expansion-safety-ca-test-v1/2026.1/chunk-0000-26d59a956dc8"
+        ]
+      },
+      {
+        "document_key": "municipal-subsidy-ca-test-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "municipal-subsidy-ca-test-v1/2026.1/chunk-0000-cfc82c175dcb"
+        ]
+      },
+      {
+        "document_key": "municipal-subsidy-ca-test-v0",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2025.1",
+        "chunk_ids": [
+          "municipal-subsidy-ca-test-v0/2025.1/chunk-0000-911f79b375dd"
+        ]
+      },
+      {
+        "document_key": "municipal-subsidy-other-region-v1",
+        "chunk_count": 1,
+        "stable": true,
+        "locatable": true,
+        "fragments_present": true,
+        "document_version": "2026.1",
+        "chunk_ids": [
+          "municipal-subsidy-other-region-v1/2026.1/chunk-0000-72604c0d5e5b"
+        ]
+      }
+    ]
+  },
+  "embedding_lifecycle": {
+    "passed": true,
+    "failures": [],
+    "cases": [
+      {
+        "case_id": "embedding_failure_001",
+        "operation": "failure",
+        "passed": true,
+        "actual": {
+          "status": "FAILED",
+          "pending_retry_count": 2
+        },
+        "failures": []
+      },
+      {
+        "case_id": "embedding_duplicate_001",
+        "operation": "duplicate",
+        "passed": true,
+        "actual": {
+          "existing_batch_reused": true,
+          "new_batch_count": 0
+        },
+        "failures": []
+      },
+      {
+        "case_id": "embedding_retry_001",
+        "operation": "retry",
+        "passed": true,
+        "actual": {
+          "status": "COMPLETED",
+          "pending_retry_count": 0
+        },
+        "failures": []
+      },
+      {
+        "case_id": "embedding_rebuild_001",
+        "operation": "rebuild",
+        "passed": true,
+        "actual": {
+          "new_batch_count": 1,
+          "old_vectors_deleted": true,
+          "status": "COMPLETED"
+        },
+        "failures": []
+      }
+    ]
+  },
+  "failures": []
+}

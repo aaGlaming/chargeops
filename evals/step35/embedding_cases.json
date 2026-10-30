@@ -1,0 +1,10 @@
+{
+  "suite": "chargeops-embedding-lifecycle-eval-v1",
+  "data_version": "eval-step35-2026-10-30",
+  "cases": [
+    {"case_id": "embedding_failure_001", "operation": "failure", "batch_key": "embed-doc-1-v1", "requested": 2, "failed": 2, "expected_status": "FAILED", "expected_pending_retry_count": 2},
+    {"case_id": "embedding_duplicate_001", "operation": "duplicate", "batch_key": "embed-doc-1-v1", "expected_existing_batch_reused": true, "expected_new_batch_count": 0},
+    {"case_id": "embedding_retry_001", "operation": "retry", "batch_key": "embed-doc-1-v1", "expected_status": "COMPLETED", "expected_pending_retry_count": 0},
+    {"case_id": "embedding_rebuild_001", "operation": "rebuild", "batch_key": "embed-doc-1-v1", "force": true, "delete_existing": true, "expected_new_batch_count": 1, "expected_old_vectors_deleted": true, "expected_status": "COMPLETED"}
+  ]
+}
