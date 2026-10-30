@@ -61,10 +61,15 @@ class AgentInputBase(BaseModel):
 
 
 class CoverageGapInput(AgentInputBase):
+    prompt_version: str = Field(default="coverage-gap-v1", max_length=64)
     region_code: str = Field(min_length=1, max_length=32)
     charger_type: Literal["ALL", "FAST", "SLOW"] = "ALL"
     coverage_radius_km: float = Field(default=5.0, gt=0, le=100)
     threshold: float = Field(default=0.8, ge=0, le=1)
+    fast_ratio_threshold: float = Field(default=0.3, ge=0, le=1)
+    time_gap_occupancy_threshold: float = Field(default=0.85, ge=0, le=1)
+    stale_after_days: int = Field(default=365, ge=1, le=3650)
+    analysis_date: date | None = None
 
 
 class CompetitionInput(AgentInputBase):
@@ -106,7 +111,12 @@ class AgentOutputBase(BaseModel):
 class CoverageGapOutput(AgentOutputBase):
     coverage_score: float | None = None
     gap_types: list[str] = Field(default_factory=list)
-    metrics: dict[str, float | int | None] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    data_insufficiency: list[str] = Field(default_factory=list)
+    nearest_station_distance_km: float | None = None
+    station_density_per_sq_km: float | None = None
+    temporal_gap: dict[str, Any] = Field(default_factory=dict)
+    freshness: dict[str, Any] = Field(default_factory=dict)
 
 
 class CompetitionOutput(AgentOutputBase):

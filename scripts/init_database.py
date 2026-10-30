@@ -93,6 +93,16 @@ def ensure_compatibility_columns(cursor) -> None:
         cursor.execute("UPDATE charging_station SET external_station_key=CAST(external_station_id AS CHAR) WHERE external_station_key IS NULL")
         if not index_exists(cursor, "charging_station", "uq_station_external_key_version"):
             cursor.execute("CREATE UNIQUE INDEX uq_station_external_key_version ON charging_station (external_station_key, data_version)")
+    if table_exists(cursor, "region"):
+        for column, definition in {
+            "parent_region_id": "BIGINT UNSIGNED NULL AFTER region_code",
+            "region_type": "VARCHAR(64) NULL AFTER name",
+            "country_code": "CHAR(2) NULL AFTER region_type",
+            "boundary_geojson": "JSON NULL AFTER country_code",
+            "source_file": "VARCHAR(500) NULL AFTER source_url",
+            "deleted_at": "DATETIME NULL AFTER updated_at",
+        }.items():
+            ensure_column(cursor, "region", column, definition)
     if table_exists(cursor, "expansion_plan"):
         ensure_column(cursor, "expansion_plan", "external_case_id", "VARCHAR(128) NULL AFTER id")
         if not index_exists(cursor, "expansion_plan", "uq_expansion_case_version"):
@@ -350,9 +360,15 @@ def main() -> int:
                     "INSERT INTO schema_migration(version,checksum,applied_at,description) VALUES (%s,%s,%s,%s)",
                     ("007_agent_state_contracts", hashlib.sha256(b"agent_state_tool_contracts_events").hexdigest(), datetime.now(UTC).replace(tzinfo=None), "Step 18 Agent state, tool, model and confirmation event contracts"),
                 )
+            cursor.execute("SELECT COUNT(*) FROM schema_migration WHERE version=%s", ("008_coverage_gap_boundary",))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO schema_migration(version,checksum,applied_at,description) VALUES (%s,%s,%s,%s)",
+                    ("008_coverage_gap_boundary", hashlib.sha256(b"coverage_gap_region_boundary_compatibility").hexdigest(), datetime.now(UTC).replace(tzinfo=None), "Step 21 coverage gap region boundary compatibility columns"),
+                )
             cursor.execute("SHOW TABLES")
             tables = [row[0] for row in cursor.fetchall()]
-        print({"database": env.get("MYSQL_DSN", "").split("@")[-1], "table_count": len(tables), "migrations": ["001_target_model", "002_auth_data_scope", "003_rag_document_sections", "004_rag_chunk_batches", "005_rag_embedding_batches", "006_rag_search_log", "007_agent_state_contracts"], "workflow_tables": ["schema_migration", "import_row_error", "user_data_scope", "rag_document_section", "rag_chunk_batch", "rag_embedding_batch", "rag_embedding_item", "rag_search_log", "agent_run_event"]})
+        print({"database": env.get("MYSQL_DSN", "").split("@")[-1], "table_count": len(tables), "migrations": ["001_target_model", "002_auth_data_scope", "003_rag_document_sections", "004_rag_chunk_batches", "005_rag_embedding_batches", "006_rag_search_log", "007_agent_state_contracts", "008_coverage_gap_boundary"], "workflow_tables": ["schema_migration", "import_row_error", "user_data_scope", "rag_document_section", "rag_chunk_batch", "rag_embedding_batch", "rag_embedding_item", "rag_search_log", "agent_run_event"]})
     finally:
         connection.close()
     return 0

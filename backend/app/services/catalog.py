@@ -93,7 +93,7 @@ def _operator_summary(row: Any) -> OperatorSummary:
     )
 
 
-def list_regions(session: Session, *, region_code: str | None, page: int, page_size: int) -> tuple[list[RegionSummary], int]:
+def list_regions(session: Session, *, region_code: str | None, page: int, page_size: int, data_version: str | None = None) -> tuple[list[RegionSummary], int]:
     rc = table_columns(session, "region")
     sc = table_columns(session, "charging_station")
     conditions = [_active("r", rc)]
@@ -101,6 +101,9 @@ def list_regions(session: Session, *, region_code: str | None, page: int, page_s
     if region_code:
         conditions.append("r.region_code=:region_code")
         params["region_code"] = region_code
+    if data_version:
+        conditions.append("r.data_version=:data_version")
+        params["data_version"] = data_version
     where = " AND ".join(conditions)
     region_type = _col("r", rc, "region_type")
     country_code = _col("r", rc, "country_code")
@@ -293,6 +296,13 @@ def list_connectors(session: Session, query: ConnectorQuery) -> tuple[list[dict[
     if query.station_id:
         conditions.append("c.station_id=:station_id")
         params["station_id"] = query.station_id
+    if query.station_ids:
+        placeholders = []
+        for index, station_id in enumerate(query.station_ids):
+            key = f"station_id_{index}"
+            placeholders.append(f":{key}")
+            params[key] = station_id
+        conditions.append(f"c.station_id IN ({', '.join(placeholders)})")
     if query.connector_type:
         conditions.append("UPPER(c.connector_type)=UPPER(:connector_type)")
         params["connector_type"] = query.connector_type

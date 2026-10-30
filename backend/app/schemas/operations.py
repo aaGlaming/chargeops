@@ -30,6 +30,7 @@ class MetricListResponse(BaseModel):
 
 class MetricQuery(BaseModel):
     station_id: int | None = Field(default=None, ge=1)
+    station_ids: list[int] | None = Field(default=None, min_length=1, max_length=50000)
     start_date: date | None = None
     end_date: date | None = None
     metric_hour: int | None = Field(default=None, ge=0, le=23)
@@ -37,6 +38,8 @@ class MetricQuery(BaseModel):
     data_version: str | None = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=50, ge=1, le=500)
+    all_pages: bool = False
+    max_rows: int = Field(default=50000, ge=1, le=100000)
 
 
 class FaultItem(BaseModel):

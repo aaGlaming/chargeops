@@ -18,6 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.agents.registry import get_tool_contract
+from app.agents.coverage_gap import analyze_coverage_gap
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import ToolExecuteResponse
@@ -139,30 +140,17 @@ def _update_snapshot(session: Session, run_id: str, *, tool_name: str, result: d
 
 def _coverage(params: dict[str, Any]) -> dict[str, Any]:
     stations = params.get("stations") or params.get("items") or []
-    if not isinstance(stations, list):
-        raise ValueError("stations must be an array")
-    charger_type = str(params.get("charger_type", "ALL")).upper()
-    threshold = float(params.get("threshold", 0.8))
-    target = max(1, int(params.get("target_station_count", params.get("target", 1))))
-    selected = stations
-    if charger_type != "ALL":
-        selected = [item for item in stations if charger_type in {str(value).upper() for value in (item.get("charging_types") or [])}]
-    fast_count = 0
-    connector_count = 0
-    for item in selected:
-        connector_count += int(item.get("total_connector_count") or 0)
-        types = {str(value).upper() for value in (item.get("charging_types") or [])}
-        if types & {"FAST", "DC_FAST", "DCFC", "直流快充"}:
-            fast_count += 1
-    station_count = len(selected)
-    coverage_score = round(min(1.0, station_count / target), 4)
-    fast_ratio = round(fast_count / station_count, 4) if station_count else 0.0
-    gap_types = []
-    if coverage_score < threshold:
-        gap_types.append("STATION_DENSITY")
-    if charger_type in {"ALL", "FAST"} and fast_ratio < float(params.get("fast_ratio_threshold", 0.3)):
-        gap_types.append("FAST_CHARGING")
-    return {"status": "COMPLETED", "station_count": station_count, "connector_count": connector_count, "fast_station_count": fast_count, "fast_ratio": fast_ratio, "coverage_score": coverage_score, "threshold": threshold, "target_station_count": target, "gap_types": gap_types}
+    connectors = params.get("connectors") or []
+    metrics = params.get("metrics") or []
+    if not isinstance(stations, list) or not isinstance(connectors, list) or not isinstance(metrics, list):
+        raise ValueError("stations, connectors and metrics must be arrays")
+    return analyze_coverage_gap(
+        params,
+        region=params.get("region") if isinstance(params.get("region"), dict) else None,
+        stations=stations,
+        connectors=connectors,
+        metrics=metrics,
+    )
 
 
 def _competition(params: dict[str, Any]) -> dict[str, Any]:
@@ -289,21 +277,76 @@ def _verify_evidence(session: Session, params: dict[str, Any]) -> dict[str, Any]
 
 def _dispatch(session: Session, settings: Settings, user: UserContext, run_id: str, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
     if tool_name == "region.query":
-        items, total = list_regions(session, region_code=params.get("region_code"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
-        return {"items": _json_value(items), "page": _page(items, total, params)}
+        items, total = list_regions(session, region_code=params.get("region_code"), data_version=params.get("data_version"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
+        serialized = [_json_value(item) for item in items]
+        if params.get("include_boundary") and serialized:
+            from app.services.catalog import table_columns
+
+            columns = table_columns(session, "region")
+            boundary = "r.`boundary_geojson`" if columns.has("boundary_geojson") else "NULL"
+            region_type = "r.`region_type`" if columns.has("region_type") else "NULL"
+            country_code = "r.`country_code`" if columns.has("country_code") else "NULL"
+            version_clause = " AND r.data_version=:data_version" if params.get("data_version") else ""
+            boundary_params = {"region_code": params.get("region_code"), "data_version": params.get("data_version")}
+            row = session.execute(
+                text(f"SELECT {boundary} AS boundary_geojson, {region_type} AS region_type, {country_code} AS country_code FROM region r WHERE r.region_code=:region_code{version_clause} ORDER BY r.data_version DESC LIMIT 1"),
+                boundary_params,
+            ).mappings().one_or_none()
+            if row:
+                serialized[0].update({"boundary_geojson": _json_value(row["boundary_geojson"]), "region_type": row["region_type"], "country_code": row["country_code"]})
+        return {"items": serialized, "page": _page(items, total, params)}
     if tool_name == "operator.query":
         items, total = list_operators(session, operator_name=params.get("operator_name"), page=int(params.get("page", 1)), page_size=int(params.get("page_size", 50)))
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "station.query":
         query = StationQuery.model_validate(params)
+        if query.all_pages:
+            collected: list[dict[str, Any]] = []
+            total = 0
+            page = 1
+            while len(collected) < query.max_rows:
+                current = query.model_copy(update={"page": page, "all_pages": False})
+                batch, total = list_stations(session, current)
+                collected.extend(batch)
+                if not batch or page * current.page_size >= total:
+                    break
+                page += 1
+            collected = collected[: query.max_rows]
+            return {"items": _json_value(collected), "page": {"page": 1, "page_size": len(collected), "total": total, "has_next": len(collected) < total}}
         items, total = list_stations(session, query)
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "connector.query":
         query = ConnectorQuery.model_validate(params)
+        if query.all_pages:
+            collected: list[dict[str, Any]] = []
+            total = 0
+            page = 1
+            while len(collected) < query.max_rows:
+                current = query.model_copy(update={"page": page, "all_pages": False})
+                batch, total = list_connectors(session, current)
+                collected.extend(batch)
+                if not batch or page * current.page_size >= total:
+                    break
+                page += 1
+            collected = collected[: query.max_rows]
+            return {"items": _json_value(collected), "page": {"page": 1, "page_size": len(collected), "total": total, "has_next": len(collected) < total}}
         items, total = list_connectors(session, query)
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "operation.query":
         query = MetricQuery.model_validate(params)
+        if query.all_pages:
+            collected: list[dict[str, Any]] = []
+            total = 0
+            page = 1
+            while len(collected) < query.max_rows:
+                current = query.model_copy(update={"page": page, "all_pages": False})
+                batch, total = list_metrics(session, current)
+                collected.extend(batch)
+                if not batch or page * current.page_size >= total:
+                    break
+                page += 1
+            collected = collected[: query.max_rows]
+            return {"items": _json_value(collected), "page": {"page": 1, "page_size": len(collected), "total": total, "has_next": len(collected) < total}}
         items, total = list_metrics(session, query)
         return {"items": _json_value(items), "page": _page(items, total, params)}
     if tool_name == "fault.query":

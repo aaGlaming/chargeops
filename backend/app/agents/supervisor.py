@@ -16,6 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.agents.contracts import AgentError, AgentEvidence, AgentGraphState, ConfirmationRecord, ModelCallRecord
+from app.agents.coverage_gap import COVERAGE_GAP_SYSTEM_PROMPT
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import SupervisorExecuteRequest
@@ -288,9 +289,9 @@ class Supervisor:
         agent_type = state.get("agent_type")
         if agent_type == "coverage_gap":
             region = payload.get("region_code")
-            station = {**base, "region_code": region, "page": 1, "page_size": 200}
+            station = {**base, "region_code": region, "page": 1, "page_size": 200, "all_pages": True, "max_rows": 50000}
             return [
-                ("region.query", {**base, "region_code": region, "page": 1, "page_size": 10}, True),
+                ("region.query", {**base, "region_code": region, "page": 1, "page_size": 10, "include_boundary": True}, True),
                 ("station.query", station, True),
             ]
         if agent_type == "competition":
@@ -334,6 +335,38 @@ class Supervisor:
                     result["items"] = [item for item in result.get("items", []) if int(item.get("station_id", -1)) in wanted]
             if required and not result.get("items"):
                 return self._stop(state, "MISSING_BUSINESS_DATA", f"工具 {tool_name} 没有返回业务数据")
+            if state.get("agent_type") == "coverage_gap" and tool_name == "region.query":
+                region_items = result.get("items", [])
+                if not region_items:
+                    return self._stop(state, "MISSING_BUSINESS_DATA", "目标区域不存在")
+                if not region_items[0].get("boundary_geojson"):
+                    return self._stop(state, "MISSING_BUSINESS_DATA", "目标区域缺少有效边界，无法计算空间覆盖")
+        if state.get("agent_type") == "coverage_gap":
+            region_result = state.get("tool_results", {}).get("region.query", {})
+            region_items = region_result.get("items", []) if isinstance(region_result, dict) else []
+            region = region_items[0] if region_items else None
+            if not region:
+                return self._stop(state, "MISSING_BUSINESS_DATA", "目标区域不存在")
+            if not region.get("boundary_geojson"):
+                return self._stop(state, "MISSING_BUSINESS_DATA", "目标区域缺少有效边界，无法计算空间覆盖")
+            station_items = state.get("tool_results", {}).get("station.query", {}).get("items", [])
+            station_ids = [int(item["id"]) for item in station_items if item.get("id") is not None]
+            connector_result = self._tool(
+                state,
+                "connector.query",
+                {**(state.get("data_version") and {"data_version": state.get("data_version")} or {}), "station_ids": station_ids, "page": 1, "page_size": 500, "all_pages": True, "max_rows": 100000},
+                required=False,
+            )
+            if connector_result is None:
+                return state
+            operation_result = self._tool(
+                state,
+                "operation.query",
+                {**(state.get("data_version") and {"data_version": state.get("data_version")} or {}), "station_ids": station_ids, "page": 1, "page_size": 500, "all_pages": True, "max_rows": 100000},
+                required=False,
+            )
+            if operation_result is None:
+                return state
         state["current_stage"] = "RETRIEVE_EVIDENCE"
         self._persist(state)
         return state
@@ -407,7 +440,14 @@ class Supervisor:
         agent_type = state.get("agent_type")
         if agent_type == "coverage_gap":
             items = results.get("station.query", {}).get("items", [])
-            return "coverage.analyze", {"stations": items, "charger_type": payload.get("charger_type", "ALL"), "threshold": payload.get("threshold", 0.8), "target_station_count": max(1, len(items))}
+            region_items = results.get("region.query", {}).get("items", [])
+            return "coverage.analyze", {
+                **payload,
+                "region": region_items[0] if region_items else None,
+                "stations": items,
+                "connectors": results.get("connector.query", {}).get("items", []),
+                "metrics": results.get("operation.query", {}).get("items", []),
+            }
         if agent_type == "competition":
             items = results.get("station.query", {}).get("items", [])
             return "competition.analyze", {"nearby_stations": items, "radius_km": payload.get("radius_km", 5)}
@@ -431,11 +471,14 @@ class Supervisor:
         result = self._tool(state, tool_name, params, required=True)
         if result is None:
             return state
+        state.setdefault("calculation_results", {})[tool_name] = result
+        if result.get("status") != "COMPLETED":
+            reason = result.get("stop_reason") or result.get("status") or "MISSING_BUSINESS_DATA"
+            return self._stop(state, str(reason), str(result.get("conclusion") or "覆盖缺口分析无法完成"), status="BLOCKED")
         if tool_name == "site.score" and not result.get("ranked_candidates"):
             return self._stop(state, "MISSING_BUSINESS_DATA", "没有可评分的候选站点")
         if tool_name == "expansion.plan" and not result.get("plans"):
             return self._stop(state, "MISSING_BUSINESS_DATA", "没有可生成扩容方案的站点")
-        state.setdefault("calculation_results", {})[tool_name] = result
         state["current_stage"] = "EXPLAIN"
         self._persist(state)
         return state
@@ -444,7 +487,11 @@ class Supervisor:
         result = next(iter(state.get("calculation_results", {}).values()), {})
         agent_type = state.get("agent_type")
         if agent_type == "coverage_gap":
-            return f"覆盖得分 {result.get('coverage_score', 0):.3f}，识别缺口：{', '.join(result.get('gap_types', [])) or '无'}。"
+            metrics = result.get("metrics", {})
+            return (
+                f"覆盖得分 {result.get('coverage_score', 0):.3f}，站点密度 {metrics.get('station_density_per_sq_km', 0)} 个/平方公里，"
+                f"最近站点距离 {result.get('nearest_station_distance_km', 0)} 公里，识别缺口：{', '.join(result.get('gap_types', [])) or '无'}。"
+            )
         if agent_type == "competition":
             return f"周边站点 {result.get('nearby_station_count', 0)} 个，竞争指数 {result.get('competition_index', 0):.2f}。"
         if agent_type == "site_selection":
@@ -470,7 +517,11 @@ class Supervisor:
                 provider="deterministic-supervisor",
                 model_name=state.get("model_name") or self.context.settings.llm_model or "supervisor-rule-v1",
                 prompt_version=state.get("prompt_version"),
-                input_summary={"agent_type": state.get("agent_type"), "stage": "EXPLAIN"},
+                input_summary={
+                    "agent_type": state.get("agent_type"),
+                    "stage": "EXPLAIN",
+                    "system_prompt": COVERAGE_GAP_SYSTEM_PROMPT if state.get("agent_type") == "coverage_gap" else "supervisor-rule-v1",
+                },
                 output_summary={"conclusion": conclusion},
                 status="SUCCEEDED",
                 duration_ms=max(0, int((time.perf_counter() - started) * 1000)),

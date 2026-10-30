@@ -142,18 +142,23 @@ class StationQuery(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     radius_km: float | None = Field(default=None, gt=0, le=500)
+    all_pages: bool = False
+    max_rows: int = Field(default=25000, ge=1, le=50000)
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=25, ge=1, le=200)
 
 
 class ConnectorQuery(BaseModel):
     station_id: int | None = Field(default=None, ge=1)
+    station_ids: list[int] | None = Field(default=None, min_length=1, max_length=50000)
     connector_type: str | None = None
     connector_status: str | None = None
     source_type: Literal["public", "user_upload", "synthetic", "agent"] | None = None
     data_version: str | None = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=50, ge=1, le=500)
+    all_pages: bool = False
+    max_rows: int = Field(default=50000, ge=1, le=100000)
 
 
 OperatorDetail.model_rebuild()

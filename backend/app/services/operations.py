@@ -43,6 +43,13 @@ def list_metrics(session: Session, query: MetricQuery) -> tuple[list[dict[str, A
     if query.station_id:
         conditions.append("m.station_id=:station_id")
         params["station_id"] = query.station_id
+    if query.station_ids:
+        placeholders = []
+        for index, station_id in enumerate(query.station_ids):
+            key = f"station_id_{index}"
+            placeholders.append(f":{key}")
+            params[key] = station_id
+        conditions.append(f"m.station_id IN ({', '.join(placeholders)})")
     if query.start_date:
         conditions.append("m.metric_date>=:start_date")
         params["start_date"] = query.start_date
