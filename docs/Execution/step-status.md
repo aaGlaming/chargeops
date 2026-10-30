@@ -413,3 +413,14 @@
 - 已验证 Embedding 失败、重复入库、失败重试、批次重建和旧向量删除生命周期。
 - 已验证五个 Agent 只检索自身业务文档类型，知识库无命中返回 `EVIDENCE_INSUFFICIENT`。
 - 本次 10 个查询全部通过，详细记录见 `step35-rag-evaluation.md`。
+
+## Step 36：执行 Agent 评测和安全验证
+
+**状态：完成。**
+
+- 已验证五个 Agent 的路由、输入校验、输出 Schema、业务字段完整性和 MySQL/RAG 双证据契约。
+- 已重放 Step 34 的 10 个确定性业务样例，覆盖五类 Agent 的正常、缺失数据和过期数据场景。
+- 已验证提示注入、恶意 Markdown、伪造政策、角色越权、敏感信息泄露、重复调用、超时以及模型、Chroma、MySQL 故障边界。
+- 已验证扩容建议保持高风险和 `WAITING_CONFIRMATION`，不会直接批准；幂等键冲突返回原调用或冲突错误。
+- 修复了 Agent 状态补丁绕过 Pydantic 重校验的问题，未知字段、非法枚举和过大补丁会被拒绝。
+- `python scripts/evaluate_agents_security.py --strict` 共 65 项检查全部通过；详细结果见 `step36-agent-security.md` 和 `evals/step36/security_findings.json`。

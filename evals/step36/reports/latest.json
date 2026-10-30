@@ -1,0 +1,444 @@
+{
+  "suite": "chargeops-step36-agent-security-v1",
+  "suite_version": "step36-2026-10-30",
+  "status": "PASS",
+  "checks": {
+    "total": 65,
+    "passed": 65,
+    "failed": 0
+  },
+  "metrics": {
+    "agent_types": 5,
+    "business": {
+      "cases": 10,
+      "passed": 10,
+      "required_fields": {
+        "coverage_gap": [
+          "coverage_score",
+          "freshness",
+          "gap_types",
+          "metrics"
+        ],
+        "competition": [
+          "competition_index",
+          "metrics",
+          "nearby_stations",
+          "operator_concentration",
+          "service_gaps"
+        ],
+        "site_selection": [
+          "ranked_candidates",
+          "scoring_breakdown",
+          "selected_candidate_id",
+          "weights"
+        ],
+        "expansion": [
+          "confirmation_status",
+          "metrics",
+          "plans",
+          "risk_summary"
+        ],
+        "policy_matching": [
+          "match_summary",
+          "missing_materials",
+          "policy_matches",
+          "policy_versions"
+        ]
+      }
+    }
+  },
+  "categories": {
+    "contracts": [
+      {
+        "name": "route:coverage_gap:deterministic",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:coverage_gap:mysql",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:coverage_gap:rag",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "schema:coverage_gap:required_fields",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:competition:deterministic",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:competition:mysql",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:competition:rag",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "schema:competition:required_fields",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:site_selection:deterministic",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:site_selection:mysql",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:site_selection:rag",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "schema:site_selection:required_fields",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:expansion:deterministic",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:expansion:mysql",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:expansion:rag",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "schema:expansion:required_fields",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:policy_matching:deterministic",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:policy_matching:mysql",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:policy_matching:rag",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "schema:policy_matching:required_fields",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "route:all_agent_types",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "input_validation": [
+      {
+        "name": "input:coverage_gap:valid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:coverage_gap:reject_invalid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:competition:valid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:competition:reject_invalid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:site_selection:valid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:site_selection:reject_invalid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:expansion:valid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:expansion:reject_invalid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:policy_matching:valid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:policy_matching:reject_invalid",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:supervisor:reject_unbounded",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:confirmation:reject_empty_comment",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "input:transition:reject_forged_confirmation",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "business_determinism": [
+      {
+        "name": "business:coverage_gap_gold_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:coverage_gap_reject_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:competition_gold_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:competition_reject_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:site_selection_gold_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:site_selection_reject_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:expansion_gold_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:expansion_reject_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:policy_matching_gold_001",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "business:policy_matching_reject_001",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "security": [
+      {
+        "name": "security:prompt_injection:ignored",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:forged_policy:deterministic_condition",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:malicious_markdown:bounded_parse",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:malicious_markdown:no_v_html",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:access:ops_cannot_publish_expansion",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:access:auditor_cannot_start",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:access:ops_cannot_write_result",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:access:admin_has_all",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:secrets:redacted",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "security:secrets:public_preserved",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "resilience_and_confirmation": [
+      {
+        "name": "resilience:idempotency:required",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:idempotency:bounded",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:idempotency:accepted",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:limits:bounded",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "safety:expansion:high_risk",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "safety:state_patch:unknown_field_rejected",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:dependency:mysql_errors",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:dependency:chroma_errors",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:dependency:model_errors",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:tool_timeout:bounded",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "resilience:duplicate_call:global_idempotency",
+        "passed": true,
+        "detail": ""
+      }
+    ]
+  },
+  "failed_checks": [],
+  "versions": {
+    "suite_version": "step34-v1",
+    "data_version": "eval-step34-2026-10-30",
+    "snapshot_date": "2026-10-30",
+    "prompt_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-v1",
+      "expansion": "expansion-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "model": {
+      "provider": "offline-deterministic",
+      "chat_model": "fixture-no-model",
+      "temperature": 0,
+      "max_tokens": 0
+    },
+    "embedding": {
+      "provider": "offline-deterministic",
+      "model": "fixture-no-embedding",
+      "dimensions": 0,
+      "index_version": "fixture-index-v1"
+    },
+    "rule_versions": {
+      "coverage_gap": "coverage-gap-v1",
+      "competition": "competition-v1",
+      "site_selection": "site-selection-score-v1",
+      "expansion": "expansion-plan-v1",
+      "policy_matching": "policy-matching-v1"
+    },
+    "source_manifests": [
+      "data/manifests/afdc_electric_stations_ca_2026-10-29.json",
+      "data/manifests/synthetic_demo_2026-10-29.json"
+    ]
+  },
+  "dependencies": {
+    "step35_rag": {
+      "suite_version": "step35-v1",
+      "summary": {
+        "documents": 7,
+        "queries": 10,
+        "query_passed": 10,
+        "query_failed": 0,
+        "recall_at_k": 1.0,
+        "hit_rate_at_k": 1.0,
+        "mrr": 1.0,
+        "source_correctness": 1.0,
+        "fragment_locatability": 1.0,
+        "filter_checks_passed": 10,
+        "agent_type_checks_passed": 10,
+        "chunk_regeneration_passed": true,
+        "embedding_lifecycle_passed": true
+      }
+    },
+    "security_findings": "evals/step36/security_findings.json"
+  }
+}

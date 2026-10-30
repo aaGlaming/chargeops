@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -155,8 +156,16 @@ def transition_agent_run(session: Session, user: UserContext, run_id: str, *, st
         raise AppError("AGENT_INVALID_TRANSITION", f"不允许从 {current} 转换到 {status}", status_code=409)
     snapshot = AgentStateSnapshot.model_validate(_decode(row["state_snapshot"]))
     patch = dict(state_patch or {})
+    if len(patch) > 32:
+        raise AppError("AGENT_STATE_PATCH_INVALID", "Agent 状态补丁字段过多", status_code=400)
+    unknown_fields = set(patch) - set(AgentStateSnapshot.model_fields)
+    if unknown_fields:
+        raise AppError("AGENT_STATE_PATCH_INVALID", "Agent 状态补丁包含未定义字段", status_code=400, details={"fields": sorted(unknown_fields)})
     patch.update({"status": status, "current_stage": current_stage, "stop_reason": stop_reason, "confirmation_status": confirmation_status, "state_version": snapshot.state_version + 1})
-    snapshot = snapshot.model_copy(update=patch)
+    try:
+        snapshot = AgentStateSnapshot.model_validate({**snapshot.model_dump(mode="json"), **patch})
+    except ValidationError as exc:
+        raise AppError("AGENT_STATE_PATCH_INVALID", "Agent 状态补丁未通过 Schema 校验", status_code=400, details={"errors": exc.errors(include_url=False)}) from exc
     now = _now()
     finished_at = now if status in TERMINAL_STATUSES else None
     started_at = now if status == "RUNNING" and row["started_at"] is None else row["started_at"]

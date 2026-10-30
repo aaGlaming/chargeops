@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from app.agents.contracts import AgentStatus, AgentType, StopReason, ToolContract
+from app.agents.contracts import AgentStatus, AgentType, ConfirmationStatus, StopReason, ToolContract
 
 
 class AgentRunCreateRequest(BaseModel):
@@ -22,7 +22,7 @@ class AgentRunTransitionRequest(BaseModel):
     status: AgentStatus
     current_stage: str = Field(default="UPDATED", max_length=128)
     stop_reason: StopReason | None = None
-    confirmation_status: str = Field(default="NOT_REQUIRED", max_length=32)
+    confirmation_status: ConfirmationStatus = "NOT_REQUIRED"
     state_patch: dict[str, Any] = Field(default_factory=dict)
 
 

@@ -1,0 +1,56 @@
+{
+  "suite": "chargeops-step36-agent-security-v1",
+  "as_of": "2026-10-30",
+  "findings": [
+    {
+      "finding_id": "SEC-STEP36-001",
+      "severity": "HIGH",
+      "title": "Agent 状态补丁可绕过 Pydantic 重校验",
+      "category": "A06 insecure design / state tampering",
+      "reproduction": "向 transition_agent_run 传入 state_patch={\"status\":\"APPROVED\",\"unexpected\":true}；旧实现使用 model_copy(update=patch)，不会重校验更新字段。",
+      "status": "FIXED",
+      "fix_reference": "services/agent_runs.py 使用 AgentStateSnapshot.model_validate 合并后的快照，拒绝未知字段、非法枚举和超过 32 个补丁字段。",
+      "regression_result": "通过 security:state_patch:unknown_field_rejected 和 transition Schema 校验；65/65 Step 36 检查通过。"
+    },
+    {
+      "finding_id": "SEC-STEP36-002",
+      "severity": "PASS",
+      "title": "提示注入和伪造政策不会改变确定性匹配结果",
+      "category": "A05 injection",
+      "reproduction": "在 Policy attributes 中加入 ignore rules、approved=true，并将政策条件设置为不匹配。",
+      "status": "VERIFIED",
+      "fix_reference": "条件比较、政策状态和材料缺口由 policy_matching.py 确定性计算。",
+      "regression_result": "输出为 FAIL/PARTIAL/UNKNOWN，未被伪造字段提升为 PASS。"
+    },
+    {
+      "finding_id": "SEC-STEP36-003",
+      "severity": "PASS",
+      "title": "越权查询和高风险写入受角色权限与人工确认约束",
+      "category": "A01 broken access control",
+      "reproduction": "检查 OPS_ANALYST、AUDITOR、SYSTEM_ADMIN 的工具和确认权限，并验证扩容写入契约。",
+      "status": "VERIFIED",
+      "fix_reference": "authorization.py 角色权限矩阵、工具契约 permission_code 和 expansion_publish 确认权限。",
+      "regression_result": "低权限角色无 agent.run.start/tool.result.write/confirmation.expansion.publish；扩容输出保持 WAITING_CONFIRMATION。"
+    },
+    {
+      "finding_id": "SEC-STEP36-004",
+      "severity": "PASS",
+      "title": "敏感信息不会进入 Agent 轨迹摘要",
+      "category": "A09 logging and monitoring",
+      "reproduction": "将 api_key、token、password、cookie 放入嵌套输入并执行统一脱敏函数。",
+      "status": "VERIFIED",
+      "fix_reference": "services/auth.py 的递归 _redact，并由 Agent/工具/事件持久化统一调用。",
+      "regression_result": "4 个敏感值均替换为 [REDACTED]，公开字段保持。"
+    },
+    {
+      "finding_id": "SEC-STEP36-005",
+      "severity": "PASS",
+      "title": "重复调用、依赖故障和超时有可恢复边界",
+      "category": "A06 insecure design",
+      "reproduction": "测试缺少/超长幂等键、最大 Supervisor 限制，并静态核对 MySQL、Embedding/Chroma 和模型异常映射。",
+      "status": "VERIFIED",
+      "fix_reference": "ensure_idempotency_key、start_tool_call/_existing_call、SupervisorLimits 和 executor 异常映射。",
+      "regression_result": "65/65 检查通过；重复键返回原调用，依赖错误标记 retryable，限制值被 Pydantic 拒绝或封顶。"
+    }
+  ]
+}
