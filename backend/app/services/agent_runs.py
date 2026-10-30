@@ -19,7 +19,8 @@ from app.agents.contracts import (
 )
 from app.errors import AppError
 from app.schemas.agents import AgentRunCreateRequest, AgentRunDetail, AgentRunListResponse, AgentRunSummary
-from app.services.auth import UserContext, record_audit_event
+from app.services.auth import UserContext, _redact, record_audit_event
+from app.telemetry import record_sample
 
 
 TERMINAL_STATUSES = {"COMPLETED", "FAILED", "BLOCKED", "CANCELLED"}
@@ -53,7 +54,7 @@ def _now() -> datetime:
 
 
 def _json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, default=str)
+    return json.dumps(_redact(value), ensure_ascii=False, default=str)
 
 
 def _decode(value: Any) -> dict[str, Any]:
@@ -195,6 +196,7 @@ def finish_tool_call(session: Session, call_id: int, *, status: str, output_summ
         "duration_ms": duration_ms, "finished_at": _now(), "id": call_id,
     })
     session.commit()
+    record_sample("tool_call", float(duration_ms or 0), "error" if status in {"FAILED", "ERROR"} else "success")
 
 
 def record_agent_event(session: Session, record: ModelCallRecord | ConfirmationRecord, *, event_type: str, status: str, actor_user_id: int | None = None) -> int:
@@ -218,4 +220,12 @@ def record_agent_event(session: Session, record: ModelCallRecord | ConfirmationR
     })
     event_id = int(session.execute(text("SELECT LAST_INSERT_ID()")).scalar_one())
     session.commit()
+    if isinstance(record, ModelCallRecord):
+        component = {
+            "EMBEDDING_CALL": "embedding",
+            "MODEL_CALL": "model",
+            "RAG_SEARCH": "rag_search",
+            "DETERMINISTIC_CALCULATION": "deterministic",
+        }.get(event_type, "agent_event")
+        record_sample(component, float(record.duration_ms or 0), "error" if status in {"FAILED", "ERROR"} else "success")
     return event_id

@@ -35,6 +35,7 @@ PERMISSION_DEFINITIONS: tuple[PermissionDefinition, ...] = (
     PermissionDefinition("menu.rag", "menu", "read", "使用 RAG 菜单"),
     PermissionDefinition("menu.imports", "menu", "read", "使用数据导入菜单"),
     PermissionDefinition("menu.audit", "menu", "read", "查看审计菜单"),
+    PermissionDefinition("menu.monitoring", "menu", "read", "查看运行监控菜单"),
     PermissionDefinition("menu.admin", "menu", "read", "使用系统管理菜单"),
     PermissionDefinition("station.read", "station", "read", "读取充电站和连接器"),
     PermissionDefinition("metric.read", "station_metric", "read", "读取站点运营指标"),
@@ -57,6 +58,8 @@ PERMISSION_DEFINITIONS: tuple[PermissionDefinition, ...] = (
     PermissionDefinition("agent.run.read", "agent_run", "read", "读取 Agent 运行和工具轨迹"),
     PermissionDefinition("agent.run.start", "agent_run", "start", "启动 Agent 运行"),
     PermissionDefinition("audit.read", "audit_log", "read", "读取审计日志"),
+    PermissionDefinition("monitor.read", "monitoring", "read", "读取运行监控"),
+    PermissionDefinition("monitor.write", "monitoring", "write", "启用或关闭监控告警"),
     PermissionDefinition("user.manage", "user", "manage", "管理用户"),
     PermissionDefinition("permission.manage", "permission", "manage", "管理角色和权限"),
     PermissionDefinition("dataset.public.read", "dataset.public", "read", "读取公开数据集"),
@@ -84,7 +87,7 @@ PERMISSION_DEFINITIONS: tuple[PermissionDefinition, ...] = (
 
 _COMMON_READ = {
     "menu.dashboard", "menu.stations", "menu.candidates", "station.read", "metric.read", "fault.read",
-    "candidate.read", "policy.read", "expansion.read", "report.read", "agent.run.read", "dataset.public.read",
+    "candidate.read", "policy.read", "expansion.read", "report.read", "agent.run.read", "monitor.read", "dataset.public.read",
     "dataset.user_upload.read", "dataset.synthetic.read", "tool.station.query", "tool.operation.query",
     "tool.fault.query", "tool.rag.search",
 }
@@ -110,7 +113,7 @@ ROLE_PERMISSION_CODES: dict[str, frozenset[str]] = {
         "rag.document.delete", "rag.vector.rebuild", "tool.policy.match", "tool.rag.rebuild", "tool.result.write",
         "confirmation.document.delete", "confirmation.vector.rebuild", "agent.run.start", "report.confirm",
     }),
-    "AUDITOR": frozenset(_COMMON_READ | {"menu.audit", "audit.read", "rag.read", "import.read"}),
+    "AUDITOR": frozenset(_COMMON_READ | {"menu.audit", "menu.monitoring", "audit.read", "rag.read", "import.read"}),
 }
 
 

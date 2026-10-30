@@ -29,6 +29,7 @@ from app.schemas.catalog import ConnectorQuery, StationQuery
 from app.schemas.operations import FaultQuery, MetricQuery
 from app.schemas.rag import RagSearchRequest
 from app.services.agent_runs import finish_tool_call, start_tool_call
+from app.telemetry import record_sample
 from app.services.auth import UserContext, record_audit_event
 from app.services.catalog import list_connectors, list_operators, list_regions, list_stations
 from app.services.operations import list_candidates, list_faults, list_metrics
@@ -482,6 +483,9 @@ def execute_tool(session: Session, settings: Settings, user: UserContext, run_id
         else:
             result = _dispatch(session, settings, user, run_id, tool_name, params)
         duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+        component = {"deterministic_calculation": "deterministic", "rag_search": "rag_search"}.get(contract.category)
+        if component:
+            record_sample(component, float(duration_ms), "success")
         # Idempotent writes must be replayable byte-for-byte; read tools keep a
         # bounded summary so a large retrieval cannot inflate `tool_call`.
         stored = {"_result": result if contract.idempotency_required else _bounded(result)}
@@ -491,6 +495,9 @@ def execute_tool(session: Session, settings: Settings, user: UserContext, run_id
         return ToolExecuteResponse(run_id=run_id, tool_name=tool_name, tool_call_id=call_id, status="SUCCEEDED", result=_json_value(result), duration_ms=duration_ms)
     except Exception as exc:
         duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+        component = {"deterministic_calculation": "deterministic", "rag_search": "rag_search"}.get(contract.category)
+        if component:
+            record_sample(component, float(duration_ms), "error")
         # A failed SQL statement leaves the SQLAlchemy transaction unusable
         # until rollback; clear it before writing the failure trace.
         if isinstance(exc, SQLAlchemyError):

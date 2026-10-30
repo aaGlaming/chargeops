@@ -15,6 +15,7 @@ from app.api.routes.rag import router as rag_router
 from app.api.routes.agents import router as agents_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.imports import router as imports_router
+from app.api.routes.observability import router as observability_router
 from app.config import Settings, get_settings
 from app.errors import AppError, app_error_handler, http_error_handler, unhandled_error_handler, validation_error_handler
 from app.logging_config import configure_logging
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(agents_router)
     application.include_router(reports_router)
     application.include_router(imports_router)
+    application.include_router(observability_router)
 
     @application.middleware("http")
     async def inject_settings(request: Request, call_next):

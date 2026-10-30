@@ -31,6 +31,10 @@ export function listImportBatches() {
   return request<{ items: ImportBatchApi[]; page: Record<string, number | boolean> }>({ method: 'GET', url: '/imports' })
 }
 
+export function getImportBatch(batchId: number) {
+  return request<ImportBatchApi & { errors?: Array<Record<string, unknown>> }>({ method: 'GET', url: `/imports/${batchId}` })
+}
+
 export function createImportBatch(payload: ImportBatchRequest) {
   return request<ImportBatchApi>({ method: 'POST', url: '/imports', data: payload, timeout: 120_000 })
 }

@@ -22,7 +22,7 @@ from app.schemas.imports import (
     ImportPreviewResponse,
     ImportValidationError,
 )
-from app.services.auth import UserContext, enforce_data_scope, record_audit_event, require_permission
+from app.services.auth import UserContext, _redact, enforce_data_scope, record_audit_event, require_permission
 
 
 FIELD_DEFINITIONS: dict[str, list[ImportFieldDefinition]] = {
@@ -296,7 +296,7 @@ def import_rows(session: Session, user: UserContext, request: ImportConfirmReque
             error = {"row": row_number, "field": None, "level": "error", "message": str(exc)[:1000], "suggestion": "修复该行后重新上传"}
             errors.append(error)
             session.execute(text("""INSERT INTO import_row_error (import_batch_id, source_file, source_row_number, error_code, error_message, raw_payload, created_at)
-                VALUES (:batch_id, :source_file, :row_number, 'IMPORT_ROW_FAILED', :message, :raw_payload, :created_at)"""), {"batch_id": batch_id, "source_file": request.file_name, "row_number": row_number, "message": str(exc)[:1000], "raw_payload": json.dumps(raw_row, ensure_ascii=False, default=str), "created_at": _now()})
+                VALUES (:batch_id, :source_file, :row_number, 'IMPORT_ROW_FAILED', :message, :raw_payload, :created_at)"""), {"batch_id": batch_id, "source_file": request.file_name, "row_number": row_number, "message": str(exc)[:1000], "raw_payload": json.dumps(_redact(raw_row), ensure_ascii=False, default=str), "created_at": _now()})
     status = "IMPORTED" if not errors else ("FAILED" if not success else "PARTIAL")
     session.execute(text("UPDATE import_batch SET success_count=:success, failed_count=:failed, status=:status, completed_at=:completed_at WHERE id=:id"), {"success": success, "failed": len(errors), "status": status, "completed_at": _now(), "id": batch_id})
     record_audit_event(session, action="IMPORT_BATCH_COMPLETED", resource_type="import_batch", resource_id=str(batch_id), actor_user_id=user.user_id, metadata={"import_batch_id": batch_id, "dataset_type": request.dataset_type, "success_count": success, "failed_count": len(errors)})

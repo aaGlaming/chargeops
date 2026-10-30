@@ -60,6 +60,7 @@ const navigationGroups = computed<NavigationGroup[]>(() => {
         { path: '/rag', label: 'RAG 知识库', icon: Notebook, roles: ['OPS_ANALYST', 'SITE_PLANNER', 'POLICY_ADMIN', 'SYSTEM_ADMIN', 'AUDITOR'] },
         { path: '/runs', label: '运行记录', icon: Document, roles: ['OPS_ANALYST', 'SITE_PLANNER', 'OPS_LEAD', 'POLICY_ADMIN', 'SYSTEM_ADMIN', 'AUDITOR'] },
         { path: '/audit', label: '审计日志', icon: Setting, roles: ['SYSTEM_ADMIN', 'AUDITOR'] },
+        { path: '/monitoring', label: '运行监控', icon: Operation, roles: ['SYSTEM_ADMIN', 'AUDITOR'] },
       ],
     },
   ]

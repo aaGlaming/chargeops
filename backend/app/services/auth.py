@@ -54,7 +54,23 @@ class UserContext:
 
 
 def _json(value: Any) -> str | None:
-    return None if value is None else json.dumps(value, ensure_ascii=False, default=str)
+    return None if value is None else json.dumps(_redact(value), ensure_ascii=False, default=str)
+
+
+_SENSITIVE_KEYS = {
+    "api_key", "authorization", "token", "access_token", "refresh_token", "password", "password_hash", "secret", "cookie",
+    "raw_payload", "upload_content", "file_content", "model_response", "response_text",
+}
+
+
+def _redact(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): "[REDACTED]" if any(token in str(key).lower() for token in _SENSITIVE_KEYS) else _redact(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact(item) for item in value[:200]]
+    if isinstance(value, str):
+        return value[:4000]
+    return value
 
 
 def record_audit_event(
@@ -68,15 +84,27 @@ def record_audit_event(
     before_state: Any = None,
     after_state: Any = None,
     metadata: Any = None,
+    agent_run_id: str | None = None,
+    import_batch_id: int | None = None,
     commit: bool = False,
 ) -> None:
+    derived_metadata = metadata if isinstance(metadata, dict) else {}
+    derived_agent_run_id = agent_run_id or derived_metadata.get("agent_run_id")
+    if derived_agent_run_id is None and resource_type == "agent_run":
+        derived_agent_run_id = resource_id
+    derived_import_batch_id = import_batch_id or derived_metadata.get("import_batch_id")
+    if derived_import_batch_id is None and resource_type == "import_batch":
+        try:
+            derived_import_batch_id = int(resource_id) if resource_id is not None else None
+        except (TypeError, ValueError):
+            derived_import_batch_id = None
     session.execute(
         text(
             """INSERT INTO audit_log
             (occurred_at, actor_user_id, action, resource_type, resource_id,
-             request_id, trace_id, severity, before_state, after_state, metadata)
+             request_id, trace_id, agent_run_id, import_batch_id, severity, before_state, after_state, metadata)
             VALUES (:occurred_at, :actor_user_id, :action, :resource_type, :resource_id,
-                    :request_id, :trace_id, :severity, :before_state, :after_state, :metadata)"""
+                    :request_id, :trace_id, :agent_run_id, :import_batch_id, :severity, :before_state, :after_state, :metadata)"""
         ),
         {
             "occurred_at": datetime.now(UTC).replace(tzinfo=None),
@@ -86,6 +114,8 @@ def record_audit_event(
             "resource_id": resource_id,
             "request_id": current_request_id(),
             "trace_id": current_trace_id(),
+            "agent_run_id": derived_agent_run_id,
+            "import_batch_id": derived_import_batch_id,
             "severity": severity,
             "before_state": _json(before_state),
             "after_state": _json(after_state),
@@ -225,6 +255,7 @@ def authenticate_user(session: Session, *, username: str, password: str, setting
         session.rollback()
         raise AppError("AUTHENTICATION_FAILED", "用户不可用", status_code=401, headers={"WWW-Authenticate": "Bearer"})
     token, expires_in = create_access_token(user_id=user.user_id, username=user.username, token_version=user.token_version, roles=sorted(user.role_codes), settings=settings)
+    user_id_var.set(user.user_id)
     record_audit_event(session, action="LOGIN_SUCCEEDED", resource_type="user", resource_id=str(user.user_id), actor_user_id=user.user_id, metadata={"roles": sorted(user.role_codes)}, commit=True)
     return user, token, expires_in
 

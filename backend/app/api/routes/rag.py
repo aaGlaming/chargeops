@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import date
 from typing import Literal
 
@@ -40,6 +41,7 @@ from app.services.rag_embeddings import (
     list_embedding_batches,
 )
 from app.services.rag_search import search_rag
+from app.telemetry import record_sample
 
 
 router = APIRouter(prefix="/rag", tags=["rag"])
@@ -48,9 +50,13 @@ router = APIRouter(prefix="/rag", tags=["rag"])
 @router.post("/search", response_model=RagSearchResponse, summary="Hybrid RAG search with original fragments")
 def rag_search(request: RagSearchRequest, user: UserContext = Depends(get_current_user), session: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> RagSearchResponse:
     require_permission(user, "rag.read", session=session)
+    started = time.perf_counter()
     try:
-        return search_rag(session, settings, user, request)
+        result = search_rag(session, settings, user, request)
+        record_sample("rag_search", (time.perf_counter() - started) * 1000, "success")
+        return result
     except EmbeddingServiceError as exc:
+        record_sample("rag_search", (time.perf_counter() - started) * 1000, "error")
         raise AppError(exc.code, exc.message, status_code=502) from exc
 
 

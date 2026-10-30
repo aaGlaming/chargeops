@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
 import { Download, DocumentChecked, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { useAuth } from '../stores/auth'
 import { useNotifications } from '../composables/useNotifications'
-import { createImportBatch, listImportBatches, rollbackImportBatch } from '../api/imports'
+import { createImportBatch, getImportBatch, listImportBatches, rollbackImportBatch } from '../api/imports'
 import { getApiError } from '../api/http'
 
 type DatasetKey = 'stations' | 'connectors' | 'metrics' | 'faults' | 'candidates' | 'expansion'
@@ -48,6 +48,7 @@ interface ImportBatch {
   failedCount: number
   skippedCount: number
   dataVersion: string
+  errors?: Array<Record<string, unknown>>
 }
 
 const DATASETS: Record<DatasetKey, DatasetDefinition> = {
@@ -277,7 +278,8 @@ function downloadTemplate(dataset: DatasetDefinition) {
 
 function downloadFailureReport() {
   const header = 'row,field,level,message,suggestion'
-  const body = validationErrors.value.map((item) => [item.row, item.field, item.level, item.message, item.suggestion].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
+  const sourceErrors = selectedBatch.value?.errors?.length ? selectedBatch.value.errors.map((item) => ({ row: item.row || '', field: item.field || '', level: item.level || 'error', message: item.message || item.error_message || '', suggestion: item.suggestion || '修复该行后重新上传' })) : validationErrors.value
+  const body = sourceErrors.map((item) => [item.row, item.field, item.level, item.message, item.suggestion].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
   downloadFile(`import-errors-${Date.now()}.csv`, `${header}\n${body}`)
 }
 
@@ -318,9 +320,17 @@ function findDataVersion() {
   return field && rows.value[0]?.[field] ? rows.value[0][field] : new Date().toISOString().slice(0, 10)
 }
 
-function openBatch(batch: ImportBatch) {
+async function openBatch(batch: ImportBatch) {
   selectedBatch.value = batch
   batchDrawerVisible.value = true
+  if (/^\d+$/.test(batch.id)) {
+    try {
+      const detail = await getImportBatch(Number(batch.id))
+      selectedBatch.value = { ...batch, errors: detail.errors || [] }
+    } catch (error) {
+      ElMessage.warning(getApiError(error).message)
+    }
+  }
 }
 
 async function rollbackBatch(batch: ImportBatch) {

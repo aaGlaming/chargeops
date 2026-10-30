@@ -20,6 +20,7 @@ from app.schemas.rag import (
     RagEmbeddingItemSummary,
 )
 from app.services.auth import UserContext, record_audit_event
+from app.telemetry import record_sample
 
 
 class EmbeddingServiceError(RuntimeError):
@@ -53,6 +54,7 @@ def embed_texts(settings: Settings, values: list[str]) -> list[list[float]]:
     """Call an OpenAI-compatible /embeddings endpoint with bounded retries."""
     if not values:
         return []
+    started = time.perf_counter()
     config = _embedding_values(settings)
     payload = {"model": config["model"], "input": values}
     headers = {"Authorization": f"Bearer {settings.embedding_api_key}", "Content-Type": "application/json"}
@@ -70,14 +72,17 @@ def embed_texts(settings: Settings, values: list[str]) -> list[list[float]]:
                 embeddings = [item.get("embedding") for item in ordered]
                 if any(not isinstance(item, list) or not item for item in embeddings):
                     raise EmbeddingServiceError("EMBEDDING_RESPONSE_INVALID", "Embedding 返回向量为空")
+                record_sample("embedding", (time.perf_counter() - started) * 1000, "success")
                 return embeddings
             except EmbeddingServiceError:
+                record_sample("embedding", (time.perf_counter() - started) * 1000, "error")
                 raise
             except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
                 last_error = str(exc)[:1800]
                 if attempt >= config["max_retries"]:
                     break
                 time.sleep(min(2**attempt, 8))
+    record_sample("embedding", (time.perf_counter() - started) * 1000, "error")
     raise EmbeddingServiceError("EMBEDDING_REQUEST_FAILED", last_error)
 
 
@@ -95,11 +100,14 @@ class _ChromaCollection:
         self.collection_id = self._get_or_create_id()
 
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
+        started = time.perf_counter()
         try:
             response = httpx.request(method, f"{self.base_url}{path}", timeout=self.timeout, **kwargs)
             response.raise_for_status()
+            record_sample("chroma", (time.perf_counter() - started) * 1000, "success")
             return response.json() if response.content else None
         except httpx.HTTPError as exc:
+            record_sample("chroma", (time.perf_counter() - started) * 1000, "error")
             raise EmbeddingServiceError("CHROMA_REQUEST_FAILED", str(exc)[:1800]) from exc
 
     def _get_or_create_id(self) -> str:

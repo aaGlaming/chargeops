@@ -379,3 +379,15 @@
 - 已接入区域/时间窗口筛选、刷新、图表点击跳转、加载、空数据和错误状态。
 - 已通过 `npm run build`、后端 Python 编译和 `git diff --check` 验证。
 - 详细记录见 `step32-echarts-dashboard.md`。
+
+## Step 33：完善日志、审计和运行监控
+
+**状态：完成。**
+
+- 已统一关联请求、Trace、用户、Agent 运行、工具调用和导入批次标识，并补充 HTTP、数据库、模型、Embedding、RAG、Chroma、工具和确定性计算耗时采样。
+- 已实现结构化日志和审计/Agent 摘要脱敏，覆盖 API Key、Token、密码、Cookie、上传原始行和模型响应字段。
+- 已实现 Agent 运行、工具轨迹、停止原因、导入失败行和回滚记录查询。
+- 已实现登录、权限拒绝、导入、删除、确认、发布和告警开关审计查询。
+- 已实现 MySQL、Chroma、模型、磁盘、错误率和 P95 监控，以及可关闭并可恢复的告警。
+- 已新增运行记录、审计日志和运行监控前端页面，并通过后端编译、前端构建和 `git diff --check` 验证。
+- 详细记录见 `step33-observability-monitoring.md`。

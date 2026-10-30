@@ -110,14 +110,20 @@ const router = createRouter({
     {
       path: '/runs',
       name: 'runs',
-      component: () => import('../views/WorkspaceView.vue'),
+      component: () => import('../views/RunsView.vue'),
       meta: { title: '运行记录', subtitle: 'Agent 执行过程与结果', icon: Document, requiresAuth: true, permission: 'agent.run.read' },
     },
     {
       path: '/audit',
       name: 'audit',
-      component: () => import('../views/WorkspaceView.vue'),
+      component: () => import('../views/AuditView.vue'),
       meta: { title: '审计日志', subtitle: '操作、权限与人工确认记录', icon: Setting, requiresAuth: true, permission: 'audit.read' },
+    },
+    {
+      path: '/monitoring',
+      name: 'monitoring',
+      component: () => import('../views/MonitoringView.vue'),
+      meta: { title: '运行监控', subtitle: '依赖健康、耗时和告警', icon: Operation, requiresAuth: true, permission: 'monitor.read' },
     },
     {
       path: '/:pathMatch(.*)*',
