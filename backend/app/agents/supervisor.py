@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.contracts import AgentError, AgentEvidence, AgentGraphState, ConfirmationRecord, ModelCallRecord
 from app.agents.coverage_gap import COVERAGE_GAP_SYSTEM_PROMPT
+from app.agents.competition import COMPETITION_SYSTEM_PROMPT
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import SupervisorExecuteRequest
@@ -302,6 +303,8 @@ class Supervisor:
                 "radius_km": payload.get("radius_km", 5),
                 "page": 1,
                 "page_size": 200,
+                "all_pages": True,
+                "max_rows": 50000,
             }
             return [("station.query", station, True)]
         if agent_type == "site_selection":
@@ -366,6 +369,17 @@ class Supervisor:
                 required=False,
             )
             if operation_result is None:
+                return state
+        if state.get("agent_type") == "competition":
+            station_items = state.get("tool_results", {}).get("station.query", {}).get("items", [])
+            station_ids = [int(item["id"]) for item in station_items if item.get("id") is not None]
+            connector_result = self._tool(
+                state,
+                "connector.query",
+                {**(state.get("data_version") and {"data_version": state.get("data_version")} or {}), "station_ids": station_ids, "page": 1, "page_size": 500, "all_pages": True, "max_rows": 100000},
+                required=False,
+            )
+            if connector_result is None:
                 return state
         state["current_stage"] = "RETRIEVE_EVIDENCE"
         self._persist(state)
@@ -450,7 +464,11 @@ class Supervisor:
             }
         if agent_type == "competition":
             items = results.get("station.query", {}).get("items", [])
-            return "competition.analyze", {"nearby_stations": items, "radius_km": payload.get("radius_km", 5)}
+            return "competition.analyze", {
+                **payload,
+                "nearby_stations": items,
+                "connectors": results.get("connector.query", {}).get("items", []),
+            }
         if agent_type == "site_selection":
             items = results.get("candidate.query", {}).get("items", [])
             return "site.score", {"candidates": items, "weights": payload.get("weights", {})}
@@ -474,7 +492,14 @@ class Supervisor:
         state.setdefault("calculation_results", {})[tool_name] = result
         if result.get("status") != "COMPLETED":
             reason = result.get("stop_reason") or result.get("status") or "MISSING_BUSINESS_DATA"
-            return self._stop(state, str(reason), str(result.get("conclusion") or "覆盖缺口分析无法完成"), status="BLOCKED")
+            labels = {
+                "coverage_gap": "覆盖缺口分析",
+                "competition": "竞争分析",
+                "site_selection": "候选选址评分",
+                "expansion": "站点扩容规划",
+                "policy_matching": "政策匹配",
+            }
+            return self._stop(state, str(reason), str(result.get("conclusion") or f"{labels.get(state.get('agent_type'), 'Agent')}无法完成"), status="BLOCKED")
         if tool_name == "site.score" and not result.get("ranked_candidates"):
             return self._stop(state, "MISSING_BUSINESS_DATA", "没有可评分的候选站点")
         if tool_name == "expansion.plan" and not result.get("plans"):
@@ -493,7 +518,11 @@ class Supervisor:
                 f"最近站点距离 {result.get('nearest_station_distance_km', 0)} 公里，识别缺口：{', '.join(result.get('gap_types', [])) or '无'}。"
             )
         if agent_type == "competition":
-            return f"周边站点 {result.get('nearby_station_count', 0)} 个，竞争指数 {result.get('competition_index', 0):.2f}。"
+            concentration = result.get("operator_concentration", {})
+            return (
+                f"周边站点 {result.get('nearby_station_count', 0)} 个，竞争指数 {result.get('competition_index', 0):.2f}，"
+                f"运营商集中度 HHI {concentration.get('hhi', 0):.4f}，服务空白：{', '.join(result.get('service_gaps', [])) or '无'}。"
+            )
         if agent_type == "site_selection":
             return f"已完成候选站点评分，首选候选站点为 {result.get('selected_candidate_id')}。"
         if agent_type == "expansion":
@@ -520,7 +549,11 @@ class Supervisor:
                 input_summary={
                     "agent_type": state.get("agent_type"),
                     "stage": "EXPLAIN",
-                    "system_prompt": COVERAGE_GAP_SYSTEM_PROMPT if state.get("agent_type") == "coverage_gap" else "supervisor-rule-v1",
+                    "system_prompt": (
+                        COVERAGE_GAP_SYSTEM_PROMPT if state.get("agent_type") == "coverage_gap"
+                        else COMPETITION_SYSTEM_PROMPT if state.get("agent_type") == "competition"
+                        else "supervisor-rule-v1"
+                    ),
                 },
                 output_summary={"conclusion": conclusion},
                 status="SUCCEEDED",

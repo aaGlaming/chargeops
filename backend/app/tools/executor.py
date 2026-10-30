@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.registry import get_tool_contract
 from app.agents.coverage_gap import analyze_coverage_gap
+from app.agents.competition import analyze_competition
 from app.config import Settings
 from app.errors import AppError
 from app.schemas.agents import ToolExecuteResponse
@@ -155,18 +156,10 @@ def _coverage(params: dict[str, Any]) -> dict[str, Any]:
 
 def _competition(params: dict[str, Any]) -> dict[str, Any]:
     stations = params.get("nearby_stations") or params.get("stations") or []
-    if not isinstance(stations, list):
-        raise ValueError("nearby_stations must be an array")
-    radius = max(0.1, float(params.get("radius_km", 5)))
-    distribution: dict[str, int] = {}
-    for item in stations:
-        operator = item.get("operator_name") or (item.get("operator") or {}).get("operator_name") or "UNKNOWN"
-        distribution[str(operator)] = distribution.get(str(operator), 0) + 1
-    total = len(stations)
-    hhi = sum((count / total) ** 2 for count in distribution.values()) if total else 0.0
-    density = total / (math.pi * radius * radius)
-    competition_index = round(min(100.0, hhi * 50 + min(50.0, density * 10)), 4)
-    return {"status": "COMPLETED", "radius_km": radius, "nearby_station_count": total, "operator_distribution": distribution, "hhi": round(hhi, 4), "station_density_per_sq_km": round(density, 4), "competition_index": competition_index}
+    connectors = params.get("connectors") or []
+    if not isinstance(stations, list) or not isinstance(connectors, list):
+        raise ValueError("nearby_stations and connectors must be arrays")
+    return analyze_competition(params, stations=stations, connectors=connectors)
 
 
 def _site_score(params: dict[str, Any]) -> dict[str, Any]:

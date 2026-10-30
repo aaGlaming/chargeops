@@ -73,10 +73,16 @@ class CoverageGapInput(AgentInputBase):
 
 
 class CompetitionInput(AgentInputBase):
+    prompt_version: str = Field(default="competition-v1", max_length=64)
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     radius_km: float = Field(default=5.0, gt=0, le=100)
     operator_code: str | None = Field(default=None, max_length=64)
+    distance_decay_km: float = Field(default=2.0, gt=0, le=100)
+    service_gap_connector_threshold: int = Field(default=4, ge=0, le=10000)
+    service_gap_power_kw_threshold: float = Field(default=150.0, ge=0, le=100000)
+    stale_after_days: int = Field(default=365, ge=1, le=3650)
+    analysis_date: date | None = None
 
 
 class SiteSelectionInput(AgentInputBase):
@@ -123,6 +129,14 @@ class CompetitionOutput(AgentOutputBase):
     competition_index: float | None = None
     nearby_stations: list[dict[str, Any]] = Field(default_factory=list)
     operator_distribution: dict[str, int] = Field(default_factory=dict)
+    operator_concentration: dict[str, Any] = Field(default_factory=dict)
+    charging_type_distribution: dict[str, int] = Field(default_factory=dict)
+    connector_power_groups: dict[str, Any] = Field(default_factory=dict)
+    service_gaps: list[str] = Field(default_factory=list)
+    risk_flags: list[str] = Field(default_factory=list)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    data_insufficiency: list[str] = Field(default_factory=list)
+    freshness: dict[str, Any] = Field(default_factory=dict)
 
 
 class SiteSelectionOutput(AgentOutputBase):
